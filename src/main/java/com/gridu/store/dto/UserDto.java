@@ -1,6 +1,7 @@
 package com.gridu.store.dto;
 
-import jakarta.persistence.Column;
+import com.gridu.store.lib.ValidEmail;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +13,9 @@ import lombok.NoArgsConstructor;
 @Builder(toBuilder = true, builderMethodName = "of")
 public class UserDto {
 
+    @ValidEmail
     private String email;
 
-    @Column(name = "password")
+    @NotBlank(message = "Password can't be null or whitespace")
     private String password;
 }

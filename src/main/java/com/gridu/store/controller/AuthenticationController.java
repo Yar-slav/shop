@@ -2,6 +2,7 @@ package com.gridu.store.controller;
 
 import com.gridu.store.dto.UserDto;
 import com.gridu.store.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +16,7 @@ public class AuthenticationController {
     private final UserService userService;
 
     @PostMapping("/registration")
-    public ResponseEntity registration(@RequestBody UserDto userDto) {
+    public ResponseEntity registration(@Valid @RequestBody UserDto userDto) {
         return ResponseEntity.ok(userService.register(userDto));
     }
 }
