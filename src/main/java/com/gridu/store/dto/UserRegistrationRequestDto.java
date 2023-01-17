@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true, builderMethodName = "of")
-public class UserDto {
+public class UserRegistrationRequestDto {
 
     @ValidEmail
     private String email;
