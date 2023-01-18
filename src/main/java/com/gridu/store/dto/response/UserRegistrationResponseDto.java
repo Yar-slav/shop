@@ -1,4 +1,4 @@
-package com.gridu.store.dto;
+package com.gridu.store.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder(toBuilder = true, builderMethodName = "of")
-public class EmailConfirmationResponseDto {
+@Builder
+public class UserRegistrationResponseDto {
     private String message;
-    private String email;
+    private String token;
 }

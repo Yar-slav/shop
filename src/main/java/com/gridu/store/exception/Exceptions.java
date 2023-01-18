@@ -6,12 +6,9 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum Exceptions {
-
-    TOKEN_NOT_FOUND("User already exist", HttpStatus.NOT_FOUND),
-    TOKEN_EXPIRED("Token expired", HttpStatus.UNAUTHORIZED),
-    ALREADY_CONFIRMED("Already confirmed", HttpStatus.ACCEPTED),
-    USER_EXIST("Token not found", HttpStatus.CONFLICT),
+public enum Exceptions{
+    USER_EXIST("User with this email already exist", HttpStatus.CONFLICT),
+    USER_INCORRECT_PASSWORD("Incorrect password", HttpStatus.FORBIDDEN),
     USER_NOT_FOUND("User is not found", HttpStatus.NOT_FOUND);
 
     private final String message;

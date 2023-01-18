@@ -25,7 +25,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
-@Builder(toBuilder = true, builderMethodName = "of")
+@Builder
 public class UserEntity implements UserDetails {
 
     @Id

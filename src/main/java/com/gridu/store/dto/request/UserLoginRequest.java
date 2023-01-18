@@ -1,4 +1,4 @@
-package com.gridu.store.dto;
+package com.gridu.store.dto.request;
 
 import com.gridu.store.lib.ValidEmail;
 import jakarta.validation.constraints.NotBlank;
@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder(toBuilder = true, builderMethodName = "of")
-public class UserRegistrationRequestDto {
+@Builder
+public class UserLoginRequest {
 
     @ValidEmail
     private String email;
