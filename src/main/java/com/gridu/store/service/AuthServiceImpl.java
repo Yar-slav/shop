@@ -37,10 +37,8 @@ public class AuthServiceImpl implements AuthService {
                 .userRole(UserRole.USER)
                 .build();
         userRepo.save(userEntity);
-        String token = jwtService.generateToken(userEntity);
         return UserRegistrationResponseDto.builder()
                 .message("User with email: " + userEntity.getEmail() + " is successfully registered")
-                .token("Token: "+ token)
                 .build();
     }
 

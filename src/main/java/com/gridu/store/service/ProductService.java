@@ -9,4 +9,5 @@ public interface ProductService {
     List<ProductResponseDto> getAll();
 
     ProductResponseDto addProduct(ProductRequestDto requestDto);
+
 }

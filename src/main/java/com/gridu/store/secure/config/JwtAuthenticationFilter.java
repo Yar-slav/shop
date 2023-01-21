@@ -1,7 +1,5 @@
 package com.gridu.store.secure.config;
 
-import com.gridu.store.exception.ApiException;
-import com.gridu.store.exception.Exceptions;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,9 +48,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-//            else {
-//                throw new ApiException(Exceptions.TOKEN_NOT_FOUND);
-//            }
         }
         filterChain.doFilter(request, response);
     }

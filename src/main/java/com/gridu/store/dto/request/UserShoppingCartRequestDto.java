@@ -1,4 +1,4 @@
-package com.gridu.store.dto.response;
+package com.gridu.store.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,10 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductResponseDto {
-
+public class UserShoppingCartRequestDto {
     private Long id;
-    private String title;
-    private Long available;
-    private double price;
+    private Long quantity;
 }

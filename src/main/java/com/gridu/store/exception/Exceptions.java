@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum Exceptions{
+
+    PRODUCT_NOT_FOUND("Product not found", HttpStatus.NOT_FOUND),
+    PRODUCTS_NOT_ENOUGH("Amount of products not enough", HttpStatus.FORBIDDEN),
     USER_EXIST("User with this email already exist", HttpStatus.CONFLICT),
     USER_INCORRECT_PASSWORD("Incorrect password", HttpStatus.FORBIDDEN),
     USER_NOT_FOUND("User is not found", HttpStatus.NOT_FOUND);

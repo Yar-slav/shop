@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserRegistrationResponseDto {
     private String message;
-    private String token;
+//    private String token;
 }

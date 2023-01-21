@@ -1,5 +1,6 @@
 package com.gridu.store.dto.response;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,10 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductResponseDto {
+public class CartResponseDto {
 
-    private Long id;
-    private String title;
-    private Long available;
-    private double price;
+    private List<ProductForCartResponse> products;
+    private double totalPrice;
 }
