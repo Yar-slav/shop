@@ -9,4 +9,6 @@ public interface CartService {
     ProductResponseDto addItemToCart(UserShoppingCartRequestDto requestDto, String authHeader);
 
     CartResponseDto getCart(String authHeader);
+
+    Boolean deleteProductFromCart(Long id, String authHeader);
 }

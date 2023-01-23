@@ -67,6 +67,21 @@ public class CartServiceImpl implements CartService {
                 .build();
     }
 
+    @Transactional
+    @Override
+    public Boolean deleteProductFromCart(Long id, String authHeader) {
+        UserEntity userEntity = getUserEntityByToken(authHeader);
+        ProductEntity productEntity = getProductEntity(id);
+        CartEntity byUserAndProductId = cartRepo.findByUserAndProductId(userEntity, id)
+                .orElseThrow(() -> new ApiException(Exceptions.PRODUCT_NOT_FOUND));
+        cartRepo.delete(byUserAndProductId);
+        productEntity.setAvailable(productEntity.getAvailable() + byUserAndProductId.getQuantity());
+        productRepo.save(productEntity);
+        return true;
+    }
+
+
+
     private void pickUpProductsFromTheStoreIfQuantityAvailable(
             UserShoppingCartRequestDto requestDto, ProductEntity productEntity) {
         if(productEntity.getAvailable() >= requestDto.getQuantity()) {
@@ -80,7 +95,8 @@ public class CartServiceImpl implements CartService {
     private void addProductToCart(UserShoppingCartRequestDto requestDto, UserEntity userEntity) {
         boolean cartEntityExist = false;
         ProductEntity productEntity = getProductEntity(requestDto.getId());
-        CartEntity byUserAndProductId = cartRepo.findDistinctByUserAndProductId(userEntity, productEntity.getId());
+        CartEntity byUserAndProductId = cartRepo.findByUserAndProductId(
+                userEntity, requestDto.getId()).orElse(null);
         if(byUserAndProductId != null) {
             byUserAndProductId.setQuantity(byUserAndProductId.getQuantity() + requestDto.getQuantity());
             cartRepo.save(byUserAndProductId);
