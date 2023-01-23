@@ -1,6 +1,7 @@
 package com.gridu.store.service;
 
-import com.gridu.store.dto.request.UserShoppingCartRequestDto;
+import com.gridu.store.dto.request.UserCartModifyDto;
+import com.gridu.store.dto.request.UserCartRequestDto;
 import com.gridu.store.dto.response.CartResponseDto;
 import com.gridu.store.dto.response.ProductForCartResponse;
 import com.gridu.store.dto.response.ProductResponseDto;
@@ -30,10 +31,10 @@ public class CartServiceImpl implements CartService {
 
     @Transactional
     @Override
-    public ProductResponseDto addItemToCart(UserShoppingCartRequestDto requestDto, String authHeader) {
+    public ProductResponseDto addItemToCart(UserCartRequestDto requestDto, String authHeader) {
         UserEntity userEntity = getUserEntityByToken(authHeader);
         ProductEntity productEntity = getProductEntity(requestDto.getId());
-        pickUpProductsFromTheStoreIfQuantityAvailable(requestDto, productEntity);
+        pickUpAndSaveProductsFromTheStoreIfQuantityAvailable(requestDto.getQuantity(), productEntity);
         addProductToCart(requestDto, userEntity);
         return ProductResponseDto.builder()
                 .id(productEntity.getId())
@@ -72,27 +73,44 @@ public class CartServiceImpl implements CartService {
     public Boolean deleteProductFromCart(Long id, String authHeader) {
         UserEntity userEntity = getUserEntityByToken(authHeader);
         ProductEntity productEntity = getProductEntity(id);
-        CartEntity byUserAndProductId = cartRepo.findByUserAndProductId(userEntity, id)
-                .orElseThrow(() -> new ApiException(Exceptions.PRODUCT_NOT_FOUND));
-        cartRepo.delete(byUserAndProductId);
-        productEntity.setAvailable(productEntity.getAvailable() + byUserAndProductId.getQuantity());
+        CartEntity cartEntity = getCartEntityByUserAndProductId(userEntity, id);
+        cartRepo.delete(cartEntity);
+        productEntity.setAvailable(productEntity.getAvailable() + cartEntity.getQuantity());
         productRepo.save(productEntity);
         return true;
     }
 
+    @Transactional
+    @Override
+    public ProductResponseDto modifyNumberOfItem(String authHeader, UserCartModifyDto requestDto) {
+        UserEntity userEntity = getUserEntityByToken(authHeader);
+        Long productId = requestDto.getProductId();
+        ProductEntity productEntity = getProductEntity(productId);
+        CartEntity cartEntity = getCartEntityByUserAndProductId(userEntity, productId);
+        long needQuantity = requestDto.getQuantity() - cartEntity.getQuantity();
+        pickUpAndSaveProductsFromTheStoreIfQuantityAvailable(needQuantity, productEntity);
+        cartEntity.setQuantity(requestDto.getQuantity());
+        cartRepo.save(cartEntity);
+        return ProductResponseDto.builder()
+                .id(cartEntity.getProduct().getId())
+                .title(cartEntity.getProduct().getTitle())
+                .price(cartEntity.getProduct().getPrice())
+                .available(requestDto.getQuantity())
+                .build();
+    }
 
 
-    private void pickUpProductsFromTheStoreIfQuantityAvailable(
-            UserShoppingCartRequestDto requestDto, ProductEntity productEntity) {
-        if(productEntity.getAvailable() >= requestDto.getQuantity()) {
-            productEntity.setAvailable(productEntity.getAvailable() - requestDto.getQuantity());
+    private void pickUpAndSaveProductsFromTheStoreIfQuantityAvailable(
+            Long needQuantity, ProductEntity productEntity) {
+        if(productEntity.getAvailable() >= needQuantity) {
+            productEntity.setAvailable(productEntity.getAvailable() - needQuantity);
             productRepo.save(productEntity);
         } else {
             throw new ApiException(Exceptions.PRODUCTS_NOT_ENOUGH);
         }
     }
 
-    private void addProductToCart(UserShoppingCartRequestDto requestDto, UserEntity userEntity) {
+    private void addProductToCart(UserCartRequestDto requestDto, UserEntity userEntity) {
         boolean cartEntityExist = false;
         ProductEntity productEntity = getProductEntity(requestDto.getId());
         CartEntity byUserAndProductId = cartRepo.findByUserAndProductId(
@@ -114,6 +132,11 @@ public class CartServiceImpl implements CartService {
 
     private ProductEntity getProductEntity(Long productId) {
         return productRepo.findById(productId)
+                .orElseThrow(() -> new ApiException(Exceptions.PRODUCT_NOT_FOUND));
+    }
+
+    private CartEntity getCartEntityByUserAndProductId(UserEntity userEntity, Long productId) {
+        return cartRepo.findByUserAndProductId(userEntity, productId)
                 .orElseThrow(() -> new ApiException(Exceptions.PRODUCT_NOT_FOUND));
     }
 
