@@ -51,7 +51,7 @@ public class CartServiceImpl implements CartService {
         UserEntity userEntity = getUserEntityByToken(authHeader);
         List<CartEntity> allCartByUser = cartRepo.findAllByUser(userEntity);
         List<ProductForCartResponse> products = new ArrayList<>();
-        for (CartEntity cart: allCartByUser) {
+        for (CartEntity cart : allCartByUser) {
             productsNumber++;
             ProductEntity product = cart.getProduct();
             products.add(ProductForCartResponse.builder()
@@ -102,7 +102,7 @@ public class CartServiceImpl implements CartService {
 
     private void pickUpAndSaveProductsFromTheStoreIfQuantityAvailable(
             Long needQuantity, ProductEntity productEntity) {
-        if(productEntity.getAvailable() >= needQuantity) {
+        if (productEntity.getAvailable() >= needQuantity) {
             productEntity.setAvailable(productEntity.getAvailable() - needQuantity);
             productRepo.save(productEntity);
         } else {
@@ -115,12 +115,12 @@ public class CartServiceImpl implements CartService {
         ProductEntity productEntity = getProductEntity(requestDto.getId());
         CartEntity byUserAndProductId = cartRepo.findByUserAndProductId(
                 userEntity, requestDto.getId()).orElse(null);
-        if(byUserAndProductId != null) {
+        if (byUserAndProductId != null) {
             byUserAndProductId.setQuantity(byUserAndProductId.getQuantity() + requestDto.getQuantity());
             cartRepo.save(byUserAndProductId);
             cartEntityExist = true;
         }
-        if(!cartEntityExist) {
+        if (!cartEntityExist) {
             CartEntity cartEntity = CartEntity.builder()
                     .user(userEntity)
                     .product(productEntity)
