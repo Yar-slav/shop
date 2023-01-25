@@ -1,4 +1,4 @@
-package com.gridu.store.service;
+package com.gridu.store.service.implementation;
 
 import com.gridu.store.dto.request.UserLoginRequest;
 import com.gridu.store.dto.request.UserRegistrationRequestDto;
@@ -11,6 +11,7 @@ import com.gridu.store.model.UserRole;
 import com.gridu.store.repository.CartRepo;
 import com.gridu.store.repository.UserRepo;
 import com.gridu.store.secure.config.JwtService;
+import com.gridu.store.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -76,4 +77,12 @@ public class AuthServiceImpl implements AuthService {
             throw new ApiException(Exceptions.USER_EXIST);
         }
     }
+
+    public UserEntity getUserEntityByToken(String authHeader) {
+        String token = authHeader.substring(7);
+        String userEmail = jwtService.extractUsername(token);
+        return userRepo.findByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(Exceptions.USER_NOT_FOUND));
+    }
+
 }

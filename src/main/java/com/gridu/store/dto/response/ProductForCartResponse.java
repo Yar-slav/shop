@@ -11,4 +11,5 @@ public class ProductForCartResponse {
     private String title;
     private double price;
     private Long quantities;
+    private double subtotalPrice;
 }

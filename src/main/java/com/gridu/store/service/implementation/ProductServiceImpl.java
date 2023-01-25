@@ -1,10 +1,11 @@
-package com.gridu.store.service;
+package com.gridu.store.service.implementation;
 
 import com.gridu.store.dto.request.ProductRequestDto;
 import com.gridu.store.dto.response.ProductResponseDto;
 import com.gridu.store.mapper.ProductMapper;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.repository.ProductRepo;
+import com.gridu.store.service.ProductService;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
