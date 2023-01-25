@@ -43,7 +43,7 @@ public class UserEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private UserRole userRole;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.MERGE)
     private List<CartEntity> carts = new ArrayList<>();
 
     @Override

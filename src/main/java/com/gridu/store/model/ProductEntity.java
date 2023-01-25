@@ -29,7 +29,7 @@ public class ProductEntity {
     private Long available;
     private double price;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.MERGE)
     private List<CartEntity> products = new ArrayList<>();
 
 }

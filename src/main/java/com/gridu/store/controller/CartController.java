@@ -50,7 +50,7 @@ public class CartController {
 
     @PatchMapping()
     public ResponseEntity<ProductResponseDto> modifyNumberOfItem(
-            @RequestBody UserCartModifyDto requestDto,
+            @Valid @RequestBody UserCartModifyDto requestDto,
             @RequestHeader("Authorization") String authHeader
     ) {
         return ResponseEntity.ok(cartService.modifyNumberOfItem(authHeader, requestDto));

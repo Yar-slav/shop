@@ -7,12 +7,12 @@ import com.gridu.store.dto.response.ProductForCartResponse;
 import com.gridu.store.dto.response.ProductResponseDto;
 import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
+import com.gridu.store.model.CartEntity;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.model.UserEntity;
-import com.gridu.store.model.CartEntity;
+import com.gridu.store.repository.CartRepo;
 import com.gridu.store.repository.ProductRepo;
 import com.gridu.store.repository.UserRepo;
-import com.gridu.store.repository.CartRepo;
 import com.gridu.store.secure.config.JwtService;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,14 +34,8 @@ public class CartServiceImpl implements CartService {
     public ProductResponseDto addItemToCart(UserCartRequestDto requestDto, String authHeader) {
         UserEntity userEntity = getUserEntityByToken(authHeader);
         ProductEntity productEntity = getProductEntity(requestDto.getId());
-        pickUpAndSaveProductsFromTheStoreIfQuantityAvailable(requestDto.getQuantity(), productEntity);
-        addProductToCart(requestDto, userEntity);
-        return ProductResponseDto.builder()
-                .id(productEntity.getId())
-                .title(productEntity.getTitle())
-                .available(requestDto.getQuantity())
-                .price(productEntity.getPrice())
-                .build();
+        addProductToCart(requestDto, userEntity, productEntity);
+        return getProductResponseDto(productEntity, requestDto.getQuantity());
     }
 
     @Override
@@ -87,40 +81,41 @@ public class CartServiceImpl implements CartService {
         Long productId = requestDto.getProductId();
         ProductEntity productEntity = getProductEntity(productId);
         CartEntity cartEntity = getCartEntityByUserAndProductId(userEntity, productId);
-        long needQuantity = requestDto.getQuantity() - cartEntity.getQuantity();
-        pickUpAndSaveProductsFromTheStoreIfQuantityAvailable(needQuantity, productEntity);
+        checkingWhetherTheProductsQuantityIsAvailable(requestDto.getQuantity(), productEntity.getAvailable());
         cartEntity.setQuantity(requestDto.getQuantity());
         cartRepo.save(cartEntity);
+        return getProductResponseDto(cartEntity.getProduct(), requestDto.getQuantity());
+    }
+
+    private static ProductResponseDto getProductResponseDto(ProductEntity productEntity, Long requestQuantity) {
         return ProductResponseDto.builder()
-                .id(cartEntity.getProduct().getId())
-                .title(cartEntity.getProduct().getTitle())
-                .price(cartEntity.getProduct().getPrice())
-                .available(requestDto.getQuantity())
+                .id(productEntity.getId())
+                .title(productEntity.getTitle())
+                .price(productEntity.getPrice())
+                .available(requestQuantity)
                 .build();
     }
 
-
-    private void pickUpAndSaveProductsFromTheStoreIfQuantityAvailable(
-            Long needQuantity, ProductEntity productEntity) {
-        if (productEntity.getAvailable() >= needQuantity) {
-            productEntity.setAvailable(productEntity.getAvailable() - needQuantity);
-            productRepo.save(productEntity);
-        } else {
+    private void checkingWhetherTheProductsQuantityIsAvailable(
+            Long needQuantity, Long existQuantity) {
+        if (existQuantity < needQuantity) {
             throw new ApiException(Exceptions.PRODUCTS_NOT_ENOUGH);
         }
     }
 
-    private void addProductToCart(UserCartRequestDto requestDto, UserEntity userEntity) {
+    private void addProductToCart(UserCartRequestDto requestDto, UserEntity userEntity, ProductEntity productEntity) {
         boolean cartEntityExist = false;
-        ProductEntity productEntity = getProductEntity(requestDto.getId());
-        CartEntity byUserAndProductId = cartRepo.findByUserAndProductId(
+        CartEntity existCart = cartRepo.findByUserAndProductId(
                 userEntity, requestDto.getId()).orElse(null);
-        if (byUserAndProductId != null) {
-            byUserAndProductId.setQuantity(byUserAndProductId.getQuantity() + requestDto.getQuantity());
-            cartRepo.save(byUserAndProductId);
+        if (existCart != null) {
+            long needQuantity = existCart.getQuantity() + requestDto.getQuantity();
+            checkingWhetherTheProductsQuantityIsAvailable(needQuantity, productEntity.getAvailable());
+            existCart.setQuantity(needQuantity);
+            cartRepo.save(existCart);
             cartEntityExist = true;
         }
         if (!cartEntityExist) {
+            checkingWhetherTheProductsQuantityIsAvailable(requestDto.getQuantity(), productEntity.getAvailable());
             CartEntity cartEntity = CartEntity.builder()
                     .user(userEntity)
                     .product(productEntity)

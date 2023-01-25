@@ -8,6 +8,7 @@ import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
+import com.gridu.store.repository.CartRepo;
 import com.gridu.store.repository.UserRepo;
 import com.gridu.store.secure.config.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final CartRepo cartRepo;
 
     @Transactional
     @Override
@@ -49,6 +51,7 @@ public class AuthServiceImpl implements AuthService {
         UserEntity userEntity = userRepo.findByEmail(requestDto.getEmail())
                 .orElseThrow(() -> new ApiException(Exceptions.USER_NOT_FOUND));
         String token = jwtService.generateToken(userEntity);
+        cartRepo.deleteByUser(userEntity);
         return LoginResponseDto.builder()
                 .token(token)
                 .build();
