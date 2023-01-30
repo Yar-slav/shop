@@ -8,6 +8,6 @@ public interface ProductService {
 
     List<ProductResponseDto> getAll();
 
-    ProductResponseDto addProduct(ProductRequestDto requestDto);
+    ProductResponseDto addProduct(ProductRequestDto requestDtom, String token);
 
 }

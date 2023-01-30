@@ -17,7 +17,7 @@ public class ProductRequestDto {
     private String title;
 
     @Min(value = 1, message = "Quantity should be one or greater")
-    private int quantity;
+    private Long quantity;
 
     @Min(value = 0, message = "Price should be zero or greater")
     private double price;

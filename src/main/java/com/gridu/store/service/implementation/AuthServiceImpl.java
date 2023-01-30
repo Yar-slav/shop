@@ -63,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             requestDto.getEmail(),
-                            requestDto.getPassword())).isAuthenticated();
+                            requestDto.getPassword()));
         } catch (BadCredentialsException e) {
             throw new ApiException(Exceptions.USER_INCORRECT_PASSWORD);
         }

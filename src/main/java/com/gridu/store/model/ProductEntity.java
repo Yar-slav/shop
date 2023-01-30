@@ -30,6 +30,6 @@ public class ProductEntity {
     private double price;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.MERGE)
-    private List<CartEntity> products = new ArrayList<>();
+    private List<CartEntity> carts = new ArrayList<>();
 
 }

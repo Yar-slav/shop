@@ -12,5 +12,5 @@ public interface ProductRepo extends CrudRepository<ProductEntity, Long> {
     List<ProductEntity> findAll();
 
     Optional<ProductEntity> findById(Long id);
-    ProductEntity findByTitleAndPrice(String title, Double price);
+    ProductEntity findByTitleAndPrice(String title, double price);
 }

@@ -17,7 +17,8 @@ public class OrderController {
     private final OrderService orderService;
 
     @PutMapping("/checkout")
-    public ResponseEntity<CheckoutResponseDto> checkout(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<CheckoutResponseDto> checkout(
+            @RequestHeader("Authorization") String authHeader) {
         return ResponseEntity.ok(orderService.checkout(authHeader));
     }
 }

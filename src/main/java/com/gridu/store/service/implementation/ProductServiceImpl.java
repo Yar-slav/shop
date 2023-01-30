@@ -27,14 +27,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponseDto addProduct(ProductRequestDto requestDto) {
+    public ProductResponseDto addProduct(ProductRequestDto requestDto, String token) {
         ProductEntity productEntity = productMapper.toProductEntity(requestDto);
         ProductEntity byTitleAndPrice = productRepo.findByTitleAndPrice(requestDto.getTitle(), requestDto.getPrice());
         if(byTitleAndPrice != null){
             byTitleAndPrice.setAvailable(byTitleAndPrice.getAvailable() + requestDto.getQuantity());
             productEntity = byTitleAndPrice;
         }
-        productRepo.save(productEntity);
+        productEntity = productRepo.save(productEntity);
         return productMapper.toProductResponseDto(productEntity);
     }
 }
