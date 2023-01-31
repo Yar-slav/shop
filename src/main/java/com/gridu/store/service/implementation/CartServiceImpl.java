@@ -8,6 +8,7 @@ import com.gridu.store.dto.response.ProductResponseDto;
 import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
 import com.gridu.store.model.CartEntity;
+import com.gridu.store.model.CartStatus;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.repository.CartRepo;
@@ -26,12 +27,13 @@ public class CartServiceImpl implements CartService {
     private final ProductRepo productRepo;
     private final CartRepo cartRepo;
     private final AuthServiceImpl authServiceImpl;
+    private final ProductServiceImpl productService;
 
     @Transactional
     @Override
     public ProductResponseDto addItemToCart(UserCartRequestDto requestDto, String authHeader) {
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
-        ProductEntity productEntity = getProductEntity(requestDto.getId());
+        ProductEntity productEntity = productService.getProductEntity(requestDto.getId());
         addProductToCart(requestDto, userEntity, productEntity);
         return getProductResponseDto(productEntity, requestDto.getQuantity());
     }
@@ -41,7 +43,7 @@ public class CartServiceImpl implements CartService {
         Long productsNumber = 0L;
         double totalPrice = 0;
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
-        List<CartEntity> allCartByUser = cartRepo.findAllByUser(userEntity);
+        List<CartEntity> allCartByUser = cartRepo.findAllByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
         List<ProductForCartResponse> products = new ArrayList<>();
         for (CartEntity cart : allCartByUser) {
             productsNumber++;
@@ -66,8 +68,8 @@ public class CartServiceImpl implements CartService {
     @Override
     public Boolean deleteProductFromCart(Long id, String authHeader) {
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
-        ProductEntity productEntity = getProductEntity(id);
-        CartEntity cartEntity = getCartEntityByUserAndProductId(userEntity, id);
+        ProductEntity productEntity = productService.getProductEntity(id);
+        CartEntity cartEntity = getCartByUserAndProductIdWhithStatusAddedToCart(userEntity, id);
         cartRepo.delete(cartEntity);
         productEntity.setAvailable(productEntity.getAvailable() + cartEntity.getQuantity());
         productRepo.save(productEntity);
@@ -79,8 +81,8 @@ public class CartServiceImpl implements CartService {
     public ProductResponseDto modifyNumberOfItem(String authHeader, UserCartModifyDto requestDto) {
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
         Long productId = requestDto.getProductId();
-        ProductEntity productEntity = getProductEntity(productId);
-        CartEntity cartEntity = getCartEntityByUserAndProductId(userEntity, productId);
+        ProductEntity productEntity = productService.getProductEntity(productId);
+        CartEntity cartEntity = getCartByUserAndProductIdWhithStatusAddedToCart(userEntity, productId);
         checkingWhetherTheProductsQuantityIsAvailable(requestDto.getQuantity(), productEntity.getAvailable());
         cartEntity.setQuantity(requestDto.getQuantity());
         cartRepo.save(cartEntity);
@@ -96,8 +98,7 @@ public class CartServiceImpl implements CartService {
                 .build();
     }
 
-    private void checkingWhetherTheProductsQuantityIsAvailable(
-            Long needQuantity, Long available) {
+    private void checkingWhetherTheProductsQuantityIsAvailable(Long needQuantity, Long available) {
         if (available < needQuantity) {
             throw new ApiException(Exceptions.PRODUCTS_NOT_ENOUGH);
         }
@@ -105,8 +106,8 @@ public class CartServiceImpl implements CartService {
 
     private void addProductToCart(UserCartRequestDto requestDto, UserEntity userEntity, ProductEntity productEntity) {
         boolean cartEntityExist = false;
-        CartEntity existCart = cartRepo.findByUserAndProductId(
-                userEntity, requestDto.getId()).orElse(null);
+        CartEntity existCart = cartRepo.findByUserAndProductIdAndCartStatus(
+                userEntity, requestDto.getId(), CartStatus.ADDED_TO_CART).orElse(null);
         if (existCart != null) {
             long needQuantity = existCart.getQuantity() + requestDto.getQuantity();
             checkingWhetherTheProductsQuantityIsAvailable(needQuantity, productEntity.getAvailable());
@@ -120,18 +121,14 @@ public class CartServiceImpl implements CartService {
                     .user(userEntity)
                     .product(productEntity)
                     .quantity(requestDto.getQuantity())
+                    .cartStatus(CartStatus.ADDED_TO_CART)
                     .build();
             cartRepo.save(cartEntity);
         }
     }
 
-    private ProductEntity getProductEntity(Long productId) {
-        return productRepo.findById(productId)
-                .orElseThrow(() -> new ApiException(Exceptions.PRODUCT_NOT_FOUND));
-    }
-
-    private CartEntity getCartEntityByUserAndProductId(UserEntity userEntity, Long productId) {
-        return cartRepo.findByUserAndProductId(userEntity, productId)
+    private CartEntity getCartByUserAndProductIdWhithStatusAddedToCart(UserEntity userEntity, Long productId) {
+        return cartRepo.findByUserAndProductIdAndCartStatus(userEntity, productId, CartStatus.ADDED_TO_CART)
                 .orElseThrow(() -> new ApiException(Exceptions.PRODUCT_NOT_FOUND));
     }
 }

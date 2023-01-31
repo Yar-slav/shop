@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface ProductRepo extends CrudRepository<ProductEntity, Long> {
 
     List<ProductEntity> findAll();
-
     Optional<ProductEntity> findById(Long id);
     ProductEntity findByTitleAndPrice(String title, double price);
 }

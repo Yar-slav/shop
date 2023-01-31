@@ -3,7 +3,7 @@ package com.gridu.store.controller;
 import com.gridu.store.dto.request.UserLoginRequest;
 import com.gridu.store.dto.request.UserRegistrationRequestDto;
 import com.gridu.store.dto.response.LoginResponseDto;
-import com.gridu.store.dto.response.UserRegistrationResponseDto;
+import com.gridu.store.dto.response.MessageResponseDto;
 import com.gridu.store.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/registration")
-    public ResponseEntity<UserRegistrationResponseDto> registration(
+    public ResponseEntity<MessageResponseDto> registration(
             @Valid @RequestBody UserRegistrationRequestDto requestDto) {
         return ResponseEntity.ok(authService.register(requestDto));
     }

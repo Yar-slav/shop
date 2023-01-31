@@ -3,7 +3,7 @@ package com.gridu.store.service.implementation;
 import com.gridu.store.dto.request.UserLoginRequest;
 import com.gridu.store.dto.request.UserRegistrationRequestDto;
 import com.gridu.store.dto.response.LoginResponseDto;
-import com.gridu.store.dto.response.UserRegistrationResponseDto;
+import com.gridu.store.dto.response.MessageResponseDto;
 import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
 import com.gridu.store.model.UserEntity;
@@ -32,7 +32,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Transactional
     @Override
-    public UserRegistrationResponseDto register(UserRegistrationRequestDto requestDto) {
+    public MessageResponseDto register(UserRegistrationRequestDto requestDto) {
         checkIfUserExist(requestDto);
         UserEntity userEntity = UserEntity.builder()
                 .email(requestDto.getEmail())
@@ -40,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
                 .userRole(UserRole.USER)
                 .build();
         userRepo.save(userEntity);
-        return UserRegistrationResponseDto.builder()
+        return MessageResponseDto.builder()
                 .message("User with email: " + userEntity.getEmail() + " is successfully registered")
                 .build();
     }

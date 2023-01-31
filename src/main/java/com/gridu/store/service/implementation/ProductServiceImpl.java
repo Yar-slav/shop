@@ -2,6 +2,8 @@ package com.gridu.store.service.implementation;
 
 import com.gridu.store.dto.request.ProductRequestDto;
 import com.gridu.store.dto.response.ProductResponseDto;
+import com.gridu.store.exception.ApiException;
+import com.gridu.store.exception.Exceptions;
 import com.gridu.store.mapper.ProductMapper;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.repository.ProductRepo;
@@ -36,5 +38,10 @@ public class ProductServiceImpl implements ProductService {
         }
         productEntity = productRepo.save(productEntity);
         return productMapper.toProductResponseDto(productEntity);
+    }
+
+    public ProductEntity getProductEntity(Long productId) {
+        return productRepo.findById(productId)
+                .orElseThrow(() -> new ApiException(Exceptions.PRODUCT_NOT_FOUND));
     }
 }
