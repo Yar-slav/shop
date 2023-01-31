@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import com.gridu.store.dto.request.UserLoginRequest;
 import com.gridu.store.dto.request.UserRegistrationRequestDto;
 import com.gridu.store.dto.response.LoginResponseDto;
-import com.gridu.store.dto.response.MessageResponseDto;
+import com.gridu.store.dto.response.UserRegistrationResponseDto;
 import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
 import com.gridu.store.model.UserEntity;
@@ -51,7 +51,7 @@ class AuthServiceImplTest {
     @Test
     void registerIfUserNotExist() {
         UserRegistrationRequestDto requestDto = new UserRegistrationRequestDto("user@gmail.com", "password");
-        MessageResponseDto responseDto = new MessageResponseDto("User with email: user@gmail.com is successfully registered");
+        UserRegistrationResponseDto responseDto = new UserRegistrationResponseDto("User with email: user@gmail.com is successfully registered");
         String passwordEncode = "passwordEncode";
         UserEntity userEntity = new UserEntity(null, requestDto.getEmail(), passwordEncode, UserRole.USER, null);
         UserEntity userSave = new UserEntity(1L, requestDto.getEmail(), passwordEncode, UserRole.USER, null);
@@ -60,7 +60,7 @@ class AuthServiceImplTest {
         when(passwordEncoder.encode(requestDto.getPassword())).thenReturn(passwordEncode);
         when(userRepo.save(userEntity)).thenReturn(userSave);
 
-        MessageResponseDto result = authService.register(requestDto);
+        UserRegistrationResponseDto result = authService.register(requestDto);
 
         assertEquals(responseDto, result);
     }
