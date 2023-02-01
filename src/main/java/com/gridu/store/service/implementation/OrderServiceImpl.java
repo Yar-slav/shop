@@ -49,7 +49,7 @@ public class OrderServiceImpl implements OrderService {
             cart.setCartStatus(CartStatus.ORDER_PLACED);
             cartRepo.save(cart);
         }
-        return new MessageResponseDto("The order has been placed successfully. OrderId: " + orderId);
+        return new MessageResponseDto("The order has been placed successfully");
     }
 
     @Override
@@ -59,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
         LocalDateTime canceledOn = LocalDateTime.now();
         for(CartEntity cart: cartsByOrderId) {
             if(!cart.getUser().equals(userEntity)) {
-                throw new ApiException(Exceptions.CART_NOT_FOUND);
+                throw new ApiException(Exceptions.ORDER_NOT_BELONG_USER);
             }
             ProductEntity product = cart.getProduct();
             product.setAvailable(product.getAvailable() + cart.getQuantity());
@@ -115,7 +115,7 @@ public class OrderServiceImpl implements OrderService {
     private List<CartEntity> getCartsByOrderIdWithStatusOrderPlaced(Long orderId) {
         List<CartEntity> cartsByOrderId = cartRepo.findAllByOrderIdAndCartStatus(orderId, CartStatus.ORDER_PLACED);
         if(cartsByOrderId.equals(Collections.emptyList())) {
-            throw new ApiException(Exceptions.CART_NOT_FOUND);
+            throw new ApiException(Exceptions.ORDER_NOT_FOUND);
         }
         return cartsByOrderId;
     }

@@ -3,7 +3,6 @@ package com.gridu.store.service.implementation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +14,7 @@ import com.gridu.store.dto.response.ProductResponseDto;
 import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
 import com.gridu.store.model.CartEntity;
+import com.gridu.store.model.CartStatus;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
@@ -39,6 +39,8 @@ class CartServiceImplTest {
     private CartRepo cartRepo;
     @Mock
     private AuthServiceImpl authServiceImpl;
+    @Mock
+    private ProductServiceImpl productService;
     @InjectMocks
     private CartServiceImpl cartService;
 
@@ -48,12 +50,13 @@ class CartServiceImplTest {
         ProductResponseDto productResponseDto = new ProductResponseDto(5L, "book", 10L, 300);
         ProductEntity productEntity = new ProductEntity(5L, "book", 100L, 300, null);
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-        CartEntity cartEntity = new CartEntity(null, user, productEntity, 10L);
-        CartEntity cartEntityAfterSave = new CartEntity(1L, user, productEntity, 10L);
+        CartEntity cartEntity = new CartEntity(null, user, productEntity, 10L, CartStatus.ADDED_TO_CART, null, null, null);
+        CartEntity cartEntityAfterSave = new CartEntity(1L, user, productEntity, 10L, CartStatus.ADDED_TO_CART, null, null, null);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(productRepo.findById(userCartRequestDto.getId())).thenReturn(Optional.of(productEntity));
-        when(cartRepo.findByUserAndProductId(user, userCartRequestDto.getId())).thenReturn(Optional.empty());
+        when(productService.getProductEntity(userCartRequestDto.getId())).thenReturn(productEntity);
+        when(cartRepo.findByUserAndProductIdAndCartStatus(user, userCartRequestDto.getId(), CartStatus.ADDED_TO_CART))
+                .thenReturn(Optional.empty());
         when(cartRepo.save(cartEntity)).thenReturn(cartEntityAfterSave);
 
         ProductResponseDto result = cartService.addItemToCart(userCartRequestDto, token);
@@ -66,12 +69,12 @@ class CartServiceImplTest {
         ProductResponseDto productResponseDto = new ProductResponseDto(5L, "book", 10L, 300);
         ProductEntity productEntity = new ProductEntity(5L, "book", 100L, 300, null);
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-        CartEntity existCart = new CartEntity(1L, user, productEntity, 5L);
-        CartEntity cartEntity = new CartEntity(1L, user, productEntity, 15L);
+        CartEntity existCart = new CartEntity(1L, user, productEntity, 5L, CartStatus.ADDED_TO_CART, null, null, null);
+        CartEntity cartEntity = new CartEntity(1L, user, productEntity, 15L, CartStatus.ADDED_TO_CART, null, null, null);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(productRepo.findById(userCartRequestDto.getId())).thenReturn(Optional.of(productEntity));
-        when(cartRepo.findByUserAndProductId(user, userCartRequestDto.getId())).thenReturn(Optional.of(existCart));
+        when(productService.getProductEntity(userCartRequestDto.getId())).thenReturn(productEntity);
+        when(cartRepo.findByUserAndProductIdAndCartStatus(user, userCartRequestDto.getId(), CartStatus.ADDED_TO_CART)).thenReturn(Optional.of(existCart));
         when(cartRepo.save(cartEntity)).thenReturn(cartEntity);
 
         ProductResponseDto result = cartService.addItemToCart(userCartRequestDto, token);
@@ -85,8 +88,8 @@ class CartServiceImplTest {
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(productRepo.findById(userCartRequestDto.getId())).thenReturn(Optional.of(productEntity));
-        when(cartRepo.findByUserAndProductId(user, userCartRequestDto.getId())).thenReturn(Optional.empty());
+        when(productService.getProductEntity(userCartRequestDto.getId())).thenReturn(productEntity);
+        when(cartRepo.findByUserAndProductIdAndCartStatus(user, userCartRequestDto.getId(), CartStatus.ADDED_TO_CART)).thenReturn(Optional.empty());
 
         ApiException apiException = assertThrows(ApiException.class,
                 () -> cartService.addItemToCart(userCartRequestDto, token));
@@ -100,7 +103,8 @@ class CartServiceImplTest {
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(productRepo.findById(userCartRequestDto.getId())).thenReturn(Optional.empty());
+        when(productService.getProductEntity(userCartRequestDto.getId()))
+                .thenThrow(new ApiException(Exceptions.PRODUCT_NOT_FOUND));
 
         ApiException apiException = assertThrows(ApiException.class,
                 () -> cartService.addItemToCart(userCartRequestDto, token));
@@ -119,13 +123,13 @@ class CartServiceImplTest {
         ProductEntity productEntity1 = new ProductEntity(5L, "book1", 10L, 300, null);
         ProductEntity productEntity2 = new ProductEntity(6L, "book2", 10L, 500, null);
         List<CartEntity> allCartByUser = List.of(
-                new CartEntity(1L, null, productEntity1, 10L),
-                new CartEntity(2L, null, productEntity2, 10L)
+                new CartEntity(1L, null, productEntity1, 10L, CartStatus.ADDED_TO_CART, null, null, null),
+                new CartEntity(2L, null, productEntity2, 10L, CartStatus.ADDED_TO_CART, null, null, null)
         );
         CartResponseDto cartResponseDto = new CartResponseDto(products, 8000);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(cartRepo.findAllByUser(user)).thenReturn(allCartByUser);
+        when(cartRepo.findAllByUserAndCartStatus(user, CartStatus.ADDED_TO_CART)).thenReturn(allCartByUser);
 
         CartResponseDto result = cartService.getCart(token);
         assertEquals(cartResponseDto, result);
@@ -137,12 +141,11 @@ class CartServiceImplTest {
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
         ProductEntity productEntity = new ProductEntity(productId, "book", 10L, 300, null);
         ProductEntity productEntityAfterSave = new ProductEntity(productId, "book", 20L, 300, null);
-        CartEntity cartEntity = new CartEntity(1L, user, productEntity, 10L);
+        CartEntity cartEntity = new CartEntity(1L, user, productEntity, 10L, CartStatus.ADDED_TO_CART, null, null, null);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(productRepo.findById(productId)).thenReturn(Optional.of(productEntity));
-        when(cartRepo.findByUserAndProductId(user, productId)).thenReturn(Optional.of(cartEntity));
-        doNothing().when(cartRepo).delete(cartEntity);
+        when(productService.getProductEntity(productId)).thenReturn(productEntity);
+        when(cartRepo.findByUserAndProductIdAndCartStatus(user, productId, CartStatus.ADDED_TO_CART)).thenReturn(Optional.of(cartEntity));
         when(productRepo.save(productEntityAfterSave)).thenReturn(productEntityAfterSave);
 
         assertTrue(cartService.deleteProductFromCart(productId, token));
@@ -153,13 +156,13 @@ class CartServiceImplTest {
         UserCartModifyDto requestDto = new UserCartModifyDto(5L, 100L);
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
         ProductEntity productEntity = new ProductEntity(5L, "book", 200L, 300, null);
-        CartEntity cartEntity = new CartEntity(1L, user, productEntity, 10L);
-        CartEntity cartEntityAfterSave = new CartEntity(1L, user, productEntity, 100L);
+        CartEntity cartEntity = new CartEntity(1L, user, productEntity, 10L, CartStatus.ADDED_TO_CART, null, null, null);
+        CartEntity cartEntityAfterSave = new CartEntity(1L, user, productEntity, 100L, CartStatus.ADDED_TO_CART, null, null, null);
         ProductResponseDto responseDto = new ProductResponseDto(5L, "book", 100L, 300);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(productRepo.findById(requestDto.getProductId())).thenReturn(Optional.of(productEntity));
-        when(cartRepo.findByUserAndProductId(user, requestDto.getProductId())).thenReturn(Optional.of(cartEntity));
+        when(productService.getProductEntity(requestDto.getProductId())).thenReturn(productEntity);
+        when(cartRepo.findByUserAndProductIdAndCartStatus(user, requestDto.getProductId(), CartStatus.ADDED_TO_CART)).thenReturn(Optional.of(cartEntity));
         when(cartRepo.save(cartEntityAfterSave)).thenReturn(cartEntityAfterSave);
 
         ProductResponseDto result = cartService.modifyNumberOfItem(token, requestDto);
@@ -173,8 +176,8 @@ class CartServiceImplTest {
         ProductEntity productEntity = new ProductEntity(5L, "book", 200L, 300, null);
 
         when(authServiceImpl.getUserEntityByToken(token)).thenReturn(user);
-        when(productRepo.findById(requestDto.getProductId())).thenReturn(Optional.of(productEntity));
-        lenient().when(cartRepo.findByUserAndProductId(user, 4L)).thenReturn(Optional.empty());
+        when(productService.getProductEntity(requestDto.getProductId())).thenReturn(productEntity);
+        lenient().when(cartRepo.findByUserAndProductIdAndCartStatus(user, 4L, CartStatus.ADDED_TO_CART)).thenReturn(Optional.empty());
 
         ApiException apiException = assertThrows(ApiException.class,
                 () -> cartService.modifyNumberOfItem(token, requestDto));

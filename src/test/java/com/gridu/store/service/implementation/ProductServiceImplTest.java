@@ -2,16 +2,19 @@ package com.gridu.store.service.implementation;
 
 import static com.gridu.store.factory.dto.ProductResponseDtoFactory.createProductResponseDTOs;
 import static com.gridu.store.factory.model.ProductEntityFactory.createProductsEntity;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.gridu.store.dto.request.ProductRequestDto;
 import com.gridu.store.dto.response.ProductResponseDto;
+import com.gridu.store.exception.ApiException;
+import com.gridu.store.exception.Exceptions;
 import com.gridu.store.mapper.ProductMapper;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.repository.ProductRepo;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,8 +36,7 @@ class ProductServiceImplTest {
     private ProductServiceImpl productService;
 
     @Test
-    @DisplayName("GetAllProducts")
-    void getAll() {
+    void getAllProducts() {
         List<ProductResponseDto> productResponseDTOs = createProductResponseDTOs();
         List<ProductEntity> productEntities = createProductsEntity();
 
@@ -49,8 +51,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    @DisplayName("AddProduct_ifProductNotExist")
-    void addProduct() {
+    void addProduct_ifProductNotExist() {
         ProductResponseDto responseDto = new ProductResponseDto(1L, "book", 10L, 300);
         ProductRequestDto requestDto = new ProductRequestDto("book", 10L, 300);
         ProductEntity productEntity = new ProductEntity(null, "book", 10L, 300, null);
@@ -66,8 +67,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    @DisplayName("AddProduct_ifProductExist")
-    void addProductIfExist() {
+    void addProduct_ifProductExist() {
         ProductResponseDto responseDto = new ProductResponseDto(2L, "book", 11L, 300);
         ProductRequestDto requestDto = new ProductRequestDto("book", 1L, 300);
         ProductEntity productEntity = new ProductEntity(null, "book", 1L, 300, null);
@@ -81,5 +81,24 @@ class ProductServiceImplTest {
 
         ProductResponseDto result = productService.addProduct(requestDto, token);
         assertEquals(responseDto, result);
+    }
+
+    @Test
+    void getProductEntity_IfProductExist() {
+        ProductEntity productEntity = new ProductEntity(1L, "book", 1L, 300, null);
+        when(productRepo.findById(productEntity.getId())).thenReturn(Optional.of(productEntity));
+
+        ProductEntity result = productService.getProductEntity(productEntity.getId());
+        assertEquals(productEntity, result);
+    }
+
+    @Test
+    void getProductEntity_IfProductNotExist() {
+        when(productRepo.findById(1L)).thenThrow(new ApiException(Exceptions.PRODUCT_NOT_FOUND));
+
+        ApiException apiException = assertThrows(ApiException.class,
+                () -> productService.getProductEntity(1L));
+
+        assertEquals(Exceptions.PRODUCT_NOT_FOUND, apiException.getExceptions());
     }
 }

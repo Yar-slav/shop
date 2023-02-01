@@ -8,7 +8,8 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum Exceptions{
 
-    CART_NOT_FOUND("Cart not found", HttpStatus.NOT_FOUND),
+    ORDER_NOT_FOUND("Order not found", HttpStatus.NOT_FOUND),
+    ORDER_NOT_BELONG_USER("This number of order does not belong to you", HttpStatus.NOT_FOUND),
     PRODUCT_NOT_FOUND("Product not found", HttpStatus.NOT_FOUND),
     PRODUCTS_NOT_ENOUGH("Amount of products not enough", HttpStatus.FORBIDDEN),
     USER_EXIST("User with this email already exist", HttpStatus.CONFLICT),
