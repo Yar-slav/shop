@@ -40,28 +40,19 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponseDto getCart(String authHeader) {
+        List<ProductForCartResponse> products = new ArrayList<>();
         Long productsNumber = 0L;
         double totalPrice = 0;
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
         List<CartEntity> allCartByUser = cartRepo.findAllByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
-        List<ProductForCartResponse> products = new ArrayList<>();
         for (CartEntity cart : allCartByUser) {
             productsNumber++;
             ProductEntity product = cart.getProduct();
             double subtotalPrice = product.getPrice() * cart.getQuantity();
-            products.add(ProductForCartResponse.builder()
-                    .numberOfProduct(productsNumber)
-                    .title(product.getTitle())
-                    .price(product.getPrice())
-                    .quantities(cart.getQuantity())
-                    .subtotalPrice(subtotalPrice)
-                    .build());
+            products.add(getProductForCartResponse(productsNumber, cart, product, subtotalPrice));
             totalPrice += subtotalPrice;
         }
-        return CartResponseDto.builder()
-                .products(products)
-                .totalPrice(totalPrice)
-                .build();
+        return getCartResponseDto(products, totalPrice);
     }
 
     @Transactional
@@ -70,6 +61,7 @@ public class CartServiceImpl implements CartService {
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
         ProductEntity productEntity = productService.getProductEntity(id);
         CartEntity cartEntity = getCartByUserAndProductIdWhithStatusAddedToCart(userEntity, id);
+
         cartRepo.delete(cartEntity);
         productEntity.setAvailable(productEntity.getAvailable() + cartEntity.getQuantity());
         productRepo.save(productEntity);
@@ -83,7 +75,9 @@ public class CartServiceImpl implements CartService {
         Long productId = requestDto.getProductId();
         ProductEntity productEntity = productService.getProductEntity(productId);
         CartEntity cartEntity = getCartByUserAndProductIdWhithStatusAddedToCart(userEntity, productId);
+
         checkingWhetherTheProductsQuantityIsAvailable(requestDto.getQuantity(), productEntity.getAvailable());
+
         cartEntity.setQuantity(requestDto.getQuantity());
         cartRepo.save(cartEntity);
         return getProductResponseDto(cartEntity.getProduct(), requestDto.getQuantity());
@@ -95,6 +89,24 @@ public class CartServiceImpl implements CartService {
                 .title(productEntity.getTitle())
                 .price(productEntity.getPrice())
                 .available(requestQuantity)
+                .build();
+    }
+
+    private static ProductForCartResponse getProductForCartResponse(
+            Long productsNumber, CartEntity cart, ProductEntity product, double subtotalPrice) {
+        return ProductForCartResponse.builder()
+                .numberOfProduct(productsNumber)
+                .title(product.getTitle())
+                .price(product.getPrice())
+                .quantities(cart.getQuantity())
+                .subtotalPrice(subtotalPrice)
+                .build();
+    }
+
+    private static CartResponseDto getCartResponseDto(List<ProductForCartResponse> products, double totalPrice) {
+        return CartResponseDto.builder()
+                .products(products)
+                .totalPrice(totalPrice)
                 .build();
     }
 

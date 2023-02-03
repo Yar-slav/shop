@@ -6,6 +6,7 @@ import com.gridu.store.dto.response.LoginResponseDto;
 import com.gridu.store.dto.response.MessageResponseDto;
 import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
+import com.gridu.store.model.CartStatus;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
 import com.gridu.store.repository.CartRepo;
@@ -39,10 +40,9 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordEncoder.encode(requestDto.getPassword()))
                 .userRole(UserRole.USER)
                 .build();
+
         userRepo.save(userEntity);
-        return MessageResponseDto.builder()
-                .message("User with email: " + userEntity.getEmail() + " is successfully registered")
-                .build();
+        return new MessageResponseDto("User with email: " + userEntity.getEmail() + " is successfully registered");
     }
 
     @Transactional
@@ -52,10 +52,8 @@ public class AuthServiceImpl implements AuthService {
         UserEntity userEntity = userRepo.findByEmail(requestDto.getEmail())
                 .orElseThrow(() -> new ApiException(Exceptions.USER_NOT_FOUND));
         String token = jwtService.generateToken(userEntity);
-        cartRepo.deleteByUser(userEntity);
-        return LoginResponseDto.builder()
-                .token(token)
-                .build();
+        cartRepo.deleteByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
+        return new LoginResponseDto(token);
     }
 
     private void authenticate(UserLoginRequest requestDto) {

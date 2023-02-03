@@ -17,6 +17,6 @@ public interface CartRepo extends CrudRepository<CartEntity, Long> {
     List<CartEntity> findAllByOrderId(Long orderId);
     List<CartEntity> findAllByOrderIdAndCartStatus(Long orderId, CartStatus cartStatus);
 
-    void deleteByUser(UserEntity user);
+    void deleteByUserAndCartStatus(UserEntity user, CartStatus cartStatus);
 
 }

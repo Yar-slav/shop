@@ -14,6 +14,7 @@ import com.gridu.store.service.OrderService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -37,13 +38,14 @@ public class OrderServiceImpl implements OrderService {
         List<CartEntity> allCartByUser = cartRepo.findAllByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
         Long orderId = generateOrderId();
         LocalDateTime orderedOn = LocalDateTime.now();
-        for (CartEntity cart: allCartByUser) {
+        for (CartEntity cart : allCartByUser) {
             ProductEntity product = cart.getProduct();
             if (product.getAvailable() < cart.getQuantity()) {
                 throw new ApiException(Exceptions.PRODUCTS_NOT_ENOUGH);
             }
             product.setAvailable(product.getAvailable() - cart.getQuantity());
             productRepo.save(product);
+
             cart.setOrderedOn(orderedOn);
             cart.setOrderId(orderId);
             cart.setCartStatus(CartStatus.ORDER_PLACED);
@@ -57,13 +59,14 @@ public class OrderServiceImpl implements OrderService {
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
         List<CartEntity> cartsByOrderId = getCartsByOrderIdWithStatusOrderPlaced(orderId);
         LocalDateTime canceledOn = LocalDateTime.now();
-        for(CartEntity cart: cartsByOrderId) {
-            if(!cart.getUser().equals(userEntity)) {
+        for (CartEntity cart : cartsByOrderId) {
+            if (!cart.getUser().equals(userEntity)) {
                 throw new ApiException(Exceptions.ORDER_NOT_BELONG_USER);
             }
             ProductEntity product = cart.getProduct();
             product.setAvailable(product.getAvailable() + cart.getQuantity());
             productRepo.save(product);
+
             cart.setCanceledOn(canceledOn);
             cart.setCartStatus(CartStatus.CANCEL);
             cartRepo.save(cart);
@@ -79,10 +82,12 @@ public class OrderServiceImpl implements OrderService {
         Map<Long, List<CartEntity>> map = carts.stream()
                 .filter(cart -> !cart.getCartStatus().equals(CartStatus.ADDED_TO_CART))
                 .collect(Collectors.groupingBy(CartEntity::getOrderId));
-        for (Map.Entry<Long, List<CartEntity>> cartEntities: map.entrySet()) {
+
+        for (Map.Entry<Long, List<CartEntity>> cartEntities : map.entrySet()) {
             OrderResponseDto orderResponseDto = getOrderResponseDto(cartEntities);
             orderResponseDtoList.add(orderResponseDto);
         }
+        orderResponseDtoList = orderResponseListSortedByDate(orderResponseDtoList);
         return orderResponseDtoList;
     }
 
@@ -97,7 +102,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private static LocalDateTime getDateTime(CartEntity cart) {
-        if(cart.getCartStatus().equals(CartStatus.CANCEL)){
+        if (cart.getCartStatus().equals(CartStatus.CANCEL)) {
             return cart.getCanceledOn();
         } else {
             return cart.getOrderedOn();
@@ -106,7 +111,7 @@ public class OrderServiceImpl implements OrderService {
 
     private static double getOrderTotalPrice(List<CartEntity> carts) {
         double totalPrice = 0.0;
-        for (CartEntity cart: carts) {
+        for (CartEntity cart : carts) {
             totalPrice += cart.getProduct().getPrice() * cart.getQuantity();
         }
         return totalPrice;
@@ -114,7 +119,7 @@ public class OrderServiceImpl implements OrderService {
 
     private List<CartEntity> getCartsByOrderIdWithStatusOrderPlaced(Long orderId) {
         List<CartEntity> cartsByOrderId = cartRepo.findAllByOrderIdAndCartStatus(orderId, CartStatus.ORDER_PLACED);
-        if(cartsByOrderId.equals(Collections.emptyList())) {
+        if (cartsByOrderId.equals(Collections.emptyList())) {
             throw new ApiException(Exceptions.ORDER_NOT_FOUND);
         }
         return cartsByOrderId;
@@ -126,5 +131,11 @@ public class OrderServiceImpl implements OrderService {
             orderId = Math.abs(new Random().nextLong());
         } while (!cartRepo.findAllByOrderId(orderId).equals(Collections.emptyList()));
         return orderId;
+    }
+
+    private static List<OrderResponseDto> orderResponseListSortedByDate(List<OrderResponseDto> orderResponseDtoList) {
+        return orderResponseDtoList.stream()
+                .sorted(Comparator.comparing(OrderResponseDto::getDate).reversed())
+                .collect(Collectors.toList());
     }
 }

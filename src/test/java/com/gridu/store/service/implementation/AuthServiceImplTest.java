@@ -12,6 +12,7 @@ import com.gridu.store.dto.response.LoginResponseDto;
 import com.gridu.store.dto.response.MessageResponseDto;
 import com.gridu.store.exception.ApiException;
 import com.gridu.store.exception.Exceptions;
+import com.gridu.store.model.CartStatus;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
 import com.gridu.store.repository.CartRepo;
@@ -90,7 +91,7 @@ class AuthServiceImplTest {
         when(authenticationManager.authenticate(authenticationToken)).thenReturn(any());
         when(userRepo.findByEmail(userLoginRequest.getEmail())).thenReturn(Optional.of(user));
         when(jwtService.generateToken(user)).thenReturn(token);
-        doNothing().when(cartRepo).deleteByUser(user);
+        doNothing().when(cartRepo).deleteByUserAndCartStatus(user, CartStatus.ADDED_TO_CART);
 
         LoginResponseDto result = authService.login(userLoginRequest);
         assertEquals(responseDto, result);

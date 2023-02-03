@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class ProductForCartResponse {
-
     private Long numberOfProduct;
     private String title;
     private double price;

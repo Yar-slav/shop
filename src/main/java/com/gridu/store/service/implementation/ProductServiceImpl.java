@@ -32,7 +32,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponseDto addProduct(ProductRequestDto requestDto, String token) {
         ProductEntity productEntity = productMapper.toProductEntity(requestDto);
         ProductEntity byTitleAndPrice = productRepo.findByTitleAndPrice(requestDto.getTitle(), requestDto.getPrice());
-        if(byTitleAndPrice != null){
+        if (byTitleAndPrice != null) {
             byTitleAndPrice.setAvailable(byTitleAndPrice.getAvailable() + requestDto.getQuantity());
             productEntity = byTitleAndPrice;
         }
