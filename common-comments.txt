@@ -1,0 +1,5 @@
+Optional:
+1. if you don't work with response entity in any way except for setting its body, just return POJO
+   Spring will handle the rest, you don't need to return ResponseEntity in most of the cases
+
+2.

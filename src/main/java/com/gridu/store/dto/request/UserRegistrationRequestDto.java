@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserRegistrationRequestDto {
 
+    // Optional: that's cool that you know how to implement custom validators
+    // but there is a predefined @Email validator in jakarta standard :)
     @ValidEmail
     private String email;
 

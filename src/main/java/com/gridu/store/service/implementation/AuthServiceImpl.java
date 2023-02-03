@@ -31,9 +31,14 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final CartRepo cartRepo;
 
+    // Why do you need transactional here?
     @Transactional
     @Override
     public MessageResponseDto register(UserRegistrationRequestDto requestDto) {
+        // What happens if two users would try to register with the same email simultaneously?
+        // Please, try to fix this and guarantee uniqueness of emails in each possible situation
+        // Optionally you may want to guarantee 409 response in such cases but covering 100% scenarios wouldn't be easy
+        // for this one, so it's up to you to implement it or not, I need only uniqueness of emails.
         checkIfUserExist(requestDto);
         UserEntity userEntity = UserEntity.builder()
                 .email(requestDto.getEmail())
@@ -42,9 +47,12 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         userRepo.save(userEntity);
+        // If you have only two scenarios: fail with 409 and success, you would cover it with http statuses
+        // You don't need to write any messages to your clients, you're making API here, not UI side
         return new MessageResponseDto("User with email: " + userEntity.getEmail() + " is successfully registered");
     }
 
+    // Why do you need transactional here?
     @Transactional
     @Override
     public LoginResponseDto login(UserLoginRequest requestDto) {
@@ -68,6 +76,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void checkIfUserExist(UserRegistrationRequestDto userRegistrationRequestDto) {
+        // Optional: existsByEmail would have better performance and readability
         boolean present = userRepo
                 .findByEmail(userRegistrationRequestDto.getEmail())
                 .isPresent();

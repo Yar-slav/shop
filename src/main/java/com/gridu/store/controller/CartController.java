@@ -25,6 +25,8 @@ public class CartController {
 
     private final CartService cartService;
 
+    // Optional: ProductResponseDto isn't appropriate for cart endpoints response
+    // Because you're working with quantity field here, not available
     @PostMapping()
     public ResponseEntity<ProductResponseDto> addItemToCart(
             @Valid @RequestBody UserCartRequestDto requestDto,

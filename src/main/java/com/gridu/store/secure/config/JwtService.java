@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService {
 
+    // Please, don't store secrets as a plain text in code
+    // Even environment or system variables would be better(but not the best approach)
     private static final String SECRET_KEY = "6250655368566D5971337436763979244226452948404D635166546A576E5A72";
 
     public String extractUsername(String token) {

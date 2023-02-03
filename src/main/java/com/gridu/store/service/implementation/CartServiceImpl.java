@@ -20,6 +20,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Optional: Working with auth headers on service layer isn't a good practice,
+// your service shouldn't know anything about HTTP layer
+// First of all you may rename it to something else like identificationToken
+// Or you may receive UserPrincipal on controller layer and work with it on service layer
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
@@ -29,6 +33,7 @@ public class CartServiceImpl implements CartService {
     private final AuthServiceImpl authServiceImpl;
     private final ProductServiceImpl productService;
 
+    // Why do you need transactional here?
     @Transactional
     @Override
     public ProductResponseDto addItemToCart(UserCartRequestDto requestDto, String authHeader) {
@@ -55,6 +60,7 @@ public class CartServiceImpl implements CartService {
         return getCartResponseDto(products, totalPrice);
     }
 
+    // If you always return true then it'd be better to just return nothing
     @Transactional
     @Override
     public Boolean deleteProductFromCart(Long id, String authHeader) {
@@ -63,11 +69,14 @@ public class CartServiceImpl implements CartService {
         CartEntity cartEntity = getCartByUserAndProductIdWhithStatusAddedToCart(userEntity, id);
 
         cartRepo.delete(cartEntity);
+        // If I'm not mistaken you don't change product availability during adding to the cart
+        // Why you should change it here?
         productEntity.setAvailable(productEntity.getAvailable() + cartEntity.getQuantity());
         productRepo.save(productEntity);
         return true;
     }
 
+    // Why do you need transactional here?
     @Transactional
     @Override
     public ProductResponseDto modifyNumberOfItem(String authHeader, UserCartModifyDto requestDto) {
@@ -120,6 +129,7 @@ public class CartServiceImpl implements CartService {
         boolean cartEntityExist = false;
         CartEntity existCart = cartRepo.findByUserAndProductIdAndCartStatus(
                 userEntity, requestDto.getId(), CartStatus.ADDED_TO_CART).orElse(null);
+        // Optional: just if/else without this cartEntityExist?
         if (existCart != null) {
             long needQuantity = existCart.getQuantity() + requestDto.getQuantity();
             checkingWhetherTheProductsQuantityIsAvailable(needQuantity, productEntity.getAvailable());

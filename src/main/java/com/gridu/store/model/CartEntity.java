@@ -17,6 +17,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+// The task stated:
+// The information has to be session-scoped: once session expires - user will get new empty cart.
+//
+// Database - isn't a good choice for storing carts
+// because you need to cover at least closing the browser - and reopening it
+// to imitate creating a new session and receiving a new cart
+// I'd suggest to use sessions for such case, no need to store it in a database
+// You may store orders here, not cart
 @Entity
 @Data
 @NoArgsConstructor

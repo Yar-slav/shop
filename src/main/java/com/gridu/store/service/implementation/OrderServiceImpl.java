@@ -43,6 +43,10 @@ public class OrderServiceImpl implements OrderService {
             if (product.getAvailable() < cart.getQuantity()) {
                 throw new ApiException(Exceptions.PRODUCTS_NOT_ENOUGH);
             }
+            // If two users in the same moment would try to check out their carts
+            // You may get here lost update issue and end up with more orders to some product
+            // than there are actually available in the store
+            // Please, find a way to fix this
             product.setAvailable(product.getAvailable() - cart.getQuantity());
             productRepo.save(product);
 
@@ -51,9 +55,11 @@ public class OrderServiceImpl implements OrderService {
             cart.setCartStatus(CartStatus.ORDER_PLACED);
             cartRepo.save(cart);
         }
+        // The same comment as in AuthServiceImpl.java
         return new MessageResponseDto("The order has been placed successfully");
     }
 
+    // The same problem with lost updates here(and even more)
     @Override
     public MessageResponseDto cancelOrder(Long orderId, String authHeader) {
         UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
@@ -124,6 +130,10 @@ public class OrderServiceImpl implements OrderService {
         return cartsByOrderId;
     }
 
+    // Please, use separate order entity to couple order items with each other
+    // With this approach you would still can face situation when you have the same orderId for items from different orders
+    // Also it doesn't scale well and require additional unnecessary calls to database
+    // Let databases do this job for us
     private Long generateOrderId() {
         Long orderId;
         do {

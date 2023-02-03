@@ -31,6 +31,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponseDto addProduct(ProductRequestDto requestDto, String token) {
         ProductEntity productEntity = productMapper.toProductEntity(requestDto);
+        // Optional You may encounter with lost updates here
         ProductEntity byTitleAndPrice = productRepo.findByTitleAndPrice(requestDto.getTitle(), requestDto.getPrice());
         if (byTitleAndPrice != null) {
             byTitleAndPrice.setAvailable(byTitleAndPrice.getAvailable() + requestDto.getQuantity());
