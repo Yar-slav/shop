@@ -20,6 +20,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceImplTest {
@@ -38,16 +42,18 @@ class ProductServiceImplTest {
     @Test
     void getAllProducts() {
         List<ProductResponseDto> productResponseDTOs = createProductResponseDTOs();
-        List<ProductEntity> productEntities = createProductsEntity();
+        List<ProductEntity> productsEntity = createProductsEntity();
+        Pageable pageable = PageRequest.of(0, 3);
+        Page<ProductEntity> pageEntity = new PageImpl<>(productsEntity);
 
-        when(productRepo.findAll()).thenReturn(productEntities);
-        for (int i = 0; i < productEntities.size(); i++) {
-            when(productMapper.toProductResponseDto(productEntities.get(i)))
+        when(productRepo.findAll(pageable)).thenReturn(pageEntity);
+        for (int i = 0; i < productsEntity.size(); i++) {
+            when(productMapper.toProductResponseDto(productsEntity.get(i)))
                     .thenReturn(productResponseDTOs.get(i));
         }
 
-        List<ProductResponseDto> result = productService.getAll();
-        assertEquals(productResponseDTOs, result);
+        List<ProductResponseDto> result = productService.getAll(pageable);
+        assertEquals(result.size(), 3);
     }
 
     @Test

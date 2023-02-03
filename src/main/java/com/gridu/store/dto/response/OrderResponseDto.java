@@ -16,5 +16,4 @@ public class OrderResponseDto {
     private LocalDateTime date;
     private Double totalPrice;
     private CartStatus status;
-
 }

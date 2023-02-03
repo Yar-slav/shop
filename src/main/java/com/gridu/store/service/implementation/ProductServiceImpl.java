@@ -11,6 +11,7 @@ import com.gridu.store.service.ProductService;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,9 +22,8 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
 
     @Override
-    public List<ProductResponseDto> getAll() {
-        List<ProductEntity> allProducts = productRepo.findAll();
-        return allProducts.stream()
+    public List<ProductResponseDto> getAll(Pageable pageable) {
+        return productRepo.findAll(pageable).stream()
                 .map(productMapper::toProductResponseDto)
                 .collect(Collectors.toList());
     }

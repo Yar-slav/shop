@@ -84,8 +84,7 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.groupingBy(CartEntity::getOrderId));
 
         for (Map.Entry<Long, List<CartEntity>> cartEntities : map.entrySet()) {
-            OrderResponseDto orderResponseDto = getOrderResponseDto(cartEntities);
-            orderResponseDtoList.add(orderResponseDto);
+            orderResponseDtoList.add(getOrderResponseDto(cartEntities));
         }
         orderResponseDtoList = orderResponseListSortedByDate(orderResponseDtoList);
         return orderResponseDtoList;
