@@ -2,9 +2,12 @@ package com.gridu.store.controller;
 
 import com.gridu.store.dto.response.MessageResponseDto;
 import com.gridu.store.dto.response.OrderResponseDto;
+import com.gridu.store.model.UserEntity;
 import com.gridu.store.service.OrderService;
+import com.gridu.store.service.implementation.AuthServiceImpl;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -20,23 +23,28 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderService orderService;
+    private final AuthServiceImpl authServiceImpl;
+
 
     @PutMapping("/checkout")
-    public ResponseEntity<MessageResponseDto> checkout(
+    public void checkout(
             @RequestHeader("Authorization") String authHeader) {
-        return ResponseEntity.ok(orderService.checkout(authHeader));
+        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+        orderService.checkout(userEntity);
     }
 
     @PatchMapping("/cancel/{number-of-order}")
-    public ResponseEntity<MessageResponseDto> cancelOrder(
+    public MessageResponseDto cancelOrder(
             @PathVariable(name = "number-of-order") Long numberOfOrder,
             @RequestHeader("Authorization") String authHeader) {
-        return ResponseEntity.ok(orderService.cancelOrder(numberOfOrder, authHeader));
+        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+        return orderService.cancelOrder(numberOfOrder, userEntity);
     }
 
     @GetMapping
-    public ResponseEntity<List<OrderResponseDto>> getAllOrder(
+    public List<OrderResponseDto> getAllOrder(
             @RequestHeader("Authorization") String authHeader) {
-    return ResponseEntity.ok(orderService.getAllOrder(authHeader));
+        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+    return orderService.getAllOrder(userEntity);
     }
 }

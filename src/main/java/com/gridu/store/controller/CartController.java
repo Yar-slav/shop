@@ -4,7 +4,9 @@ import com.gridu.store.dto.request.UserCartModifyDto;
 import com.gridu.store.dto.request.UserCartRequestDto;
 import com.gridu.store.dto.response.CartResponseDto;
 import com.gridu.store.dto.response.ProductResponseDto;
+import com.gridu.store.model.UserEntity;
 import com.gridu.store.service.CartService;
+import com.gridu.store.service.implementation.AuthServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,37 +26,40 @@ import org.springframework.web.bind.annotation.RestController;
 public class CartController {
 
     private final CartService cartService;
+    private final AuthServiceImpl authServiceImpl;
 
-    // Optional: ProductResponseDto isn't appropriate for cart endpoints response
-    // Because you're working with quantity field here, not available
     @PostMapping()
-    public ResponseEntity<ProductResponseDto> addItemToCart(
+    public void addItemToCart(
             @Valid @RequestBody UserCartRequestDto requestDto,
             @RequestHeader("Authorization") String authHeader
     ) {
-        return ResponseEntity.ok(cartService.addItemToCart(requestDto, authHeader));
+        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+        cartService.addItemToCart(requestDto, userEntity);
     }
 
     @GetMapping()
-    public ResponseEntity<CartResponseDto> getCart(
+    public CartResponseDto getCart(
             @RequestHeader("Authorization") String authHeader
     ) {
-        return ResponseEntity.ok(cartService.getCart(authHeader));
+        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+        return cartService.getCart(userEntity);
     }
 
     @DeleteMapping
-    public ResponseEntity<Boolean> deleteProduct(
+    public void deleteProduct(
             @RequestParam Long product_id,
             @RequestHeader("Authorization") String authHeader
     ) {
-        return ResponseEntity.ok(cartService.deleteProductFromCart(product_id, authHeader));
+        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+        cartService.deleteProductFromCart(product_id, userEntity);
     }
 
     @PatchMapping()
-    public ResponseEntity<ProductResponseDto> modifyNumberOfItem(
+    public void modifyNumberOfItem(
             @Valid @RequestBody UserCartModifyDto requestDto,
             @RequestHeader("Authorization") String authHeader
     ) {
-        return ResponseEntity.ok(cartService.modifyNumberOfItem(authHeader, requestDto));
+        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+        cartService.modifyNumberOfItem(userEntity, requestDto);
     }
 }

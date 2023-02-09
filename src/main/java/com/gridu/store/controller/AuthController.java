@@ -22,14 +22,14 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/registration")
-    public ResponseEntity<MessageResponseDto> registration(
+    public void registration(
             @Valid @RequestBody UserRegistrationRequestDto requestDto) {
-        return ResponseEntity.ok(authService.register(requestDto));
+        authService.register(requestDto);
     }
 
     @GetMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(
+    public LoginResponseDto login(
             @Valid @RequestBody UserLoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+        return authService.login(request);
     }
 }

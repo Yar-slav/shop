@@ -6,10 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 
 @Data
-//@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class CartResponseDto {
-    private List<ProductForCartResponse> products;
+    private List<ProductInformationForCart> products;
     private double totalPrice;
 }

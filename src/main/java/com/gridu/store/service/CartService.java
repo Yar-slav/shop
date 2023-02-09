@@ -4,14 +4,15 @@ import com.gridu.store.dto.request.UserCartModifyDto;
 import com.gridu.store.dto.request.UserCartRequestDto;
 import com.gridu.store.dto.response.CartResponseDto;
 import com.gridu.store.dto.response.ProductResponseDto;
+import com.gridu.store.model.UserEntity;
 
 public interface CartService {
 
-    ProductResponseDto addItemToCart(UserCartRequestDto requestDto, String authHeader);
+    void addItemToCart(UserCartRequestDto requestDto, UserEntity userEntity);
 
-    CartResponseDto getCart(String authHeader);
+    CartResponseDto getCart(UserEntity userEntity);
 
-    Boolean deleteProductFromCart(Long id, String authHeader);
+    void deleteProductFromCart(Long id, UserEntity userEntity);
 
-    ProductResponseDto modifyNumberOfItem(String authHeader, UserCartModifyDto requestDto);
+    void modifyNumberOfItem(UserEntity userEntity, UserCartModifyDto requestDto);
 }

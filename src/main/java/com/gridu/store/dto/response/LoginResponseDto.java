@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-//@NoArgsConstructor
 @AllArgsConstructor
 public class LoginResponseDto {
     private String token;

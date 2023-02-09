@@ -7,7 +7,7 @@ import com.gridu.store.dto.response.MessageResponseDto;
 
 public interface AuthService {
 
-    MessageResponseDto register(UserRegistrationRequestDto userRegistrationRequestDto);
+    void register(UserRegistrationRequestDto userRegistrationRequestDto);
 
     LoginResponseDto login(UserLoginRequest token);
 }

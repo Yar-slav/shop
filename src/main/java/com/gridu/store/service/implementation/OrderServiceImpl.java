@@ -2,14 +2,11 @@ package com.gridu.store.service.implementation;
 
 import com.gridu.store.dto.response.MessageResponseDto;
 import com.gridu.store.dto.response.OrderResponseDto;
-import com.gridu.store.exception.ApiException;
-import com.gridu.store.exception.Exceptions;
 import com.gridu.store.model.CartEntity;
 import com.gridu.store.model.CartStatus;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.repository.CartRepo;
-import com.gridu.store.repository.ProductRepo;
 import com.gridu.store.service.OrderService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -20,70 +17,67 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.SessionFactory;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-    private final AuthServiceImpl authServiceImpl;
-    private final CartRepo cartRepo;
-    private final ProductRepo productRepo;
 
+    private final SessionFactory sessionFactory;
+    private final CartRepo cartRepo;
+
+    @SneakyThrows
     @Transactional
     @Override
-    public MessageResponseDto checkout(String authHeader) {
-        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+    public void checkout(UserEntity userEntity) {
         List<CartEntity> allCartByUser = cartRepo.findAllByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
+        if (allCartByUser.size() == 0) {
+            throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Your cart is empty");
+        }
         Long orderId = generateOrderId();
         LocalDateTime orderedOn = LocalDateTime.now();
         for (CartEntity cart : allCartByUser) {
             ProductEntity product = cart.getProduct();
             if (product.getAvailable() < cart.getQuantity()) {
-                throw new ApiException(Exceptions.PRODUCTS_NOT_ENOUGH);
+                throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Amount of products not enough");
             }
-            // If two users in the same moment would try to check out their carts
-            // You may get here lost update issue and end up with more orders to some product
-            // than there are actually available in the store
-            // Please, find a way to fix this
             product.setAvailable(product.getAvailable() - cart.getQuantity());
-            productRepo.save(product);
 
             cart.setOrderedOn(orderedOn);
             cart.setOrderId(orderId);
             cart.setCartStatus(CartStatus.ORDER_PLACED);
-            cartRepo.save(cart);
         }
-        // The same comment as in AuthServiceImpl.java
-        return new MessageResponseDto("The order has been placed successfully");
     }
 
-    // The same problem with lost updates here(and even more)
+    @Transactional
     @Override
-    public MessageResponseDto cancelOrder(Long orderId, String authHeader) {
-        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
+    public MessageResponseDto cancelOrder(Long orderId, UserEntity userEntity) {
         List<CartEntity> cartsByOrderId = getCartsByOrderIdWithStatusOrderPlaced(orderId);
         LocalDateTime canceledOn = LocalDateTime.now();
         for (CartEntity cart : cartsByOrderId) {
             if (!cart.getUser().equals(userEntity)) {
-                throw new ApiException(Exceptions.ORDER_NOT_BELONG_USER);
+                throw new ResponseStatusException(HttpStatusCode.valueOf(404), "This number of order does not belong to you");
             }
             ProductEntity product = cart.getProduct();
             product.setAvailable(product.getAvailable() + cart.getQuantity());
-            productRepo.save(product);
 
             cart.setCanceledOn(canceledOn);
             cart.setCartStatus(CartStatus.CANCEL);
-            cartRepo.save(cart);
         }
         return new MessageResponseDto("The order: " + orderId + " has been canceled successfully");
     }
 
     @Override
-    public List<OrderResponseDto> getAllOrder(String authHeader) {
+    public List<OrderResponseDto> getAllOrder(UserEntity userEntity) {
         List<OrderResponseDto> orderResponseDtoList = new ArrayList<>();
-        UserEntity userEntity = authServiceImpl.getUserEntityByToken(authHeader);
         List<CartEntity> carts = cartRepo.findAllByUser(userEntity);
         Map<Long, List<CartEntity>> map = carts.stream()
                 .filter(cart -> !cart.getCartStatus().equals(CartStatus.ADDED_TO_CART))
@@ -125,7 +119,7 @@ public class OrderServiceImpl implements OrderService {
     private List<CartEntity> getCartsByOrderIdWithStatusOrderPlaced(Long orderId) {
         List<CartEntity> cartsByOrderId = cartRepo.findAllByOrderIdAndCartStatus(orderId, CartStatus.ORDER_PLACED);
         if (cartsByOrderId.equals(Collections.emptyList())) {
-            throw new ApiException(Exceptions.ORDER_NOT_FOUND);
+            throw new ResponseStatusException(HttpStatusCode.valueOf(404), "Order not found");
         }
         return cartsByOrderId;
     }

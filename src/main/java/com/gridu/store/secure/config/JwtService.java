@@ -10,15 +10,19 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @Service
+@Setter
+@RequiredArgsConstructor
 public class JwtService {
 
-    // Please, don't store secrets as a plain text in code
-    // Even environment or system variables would be better(but not the best approach)
-    private static final String SECRET_KEY = "6250655368566D5971337436763979244226452948404D635166546A576E5A72";
+    @Value("${jwt.token.secret}")
+    private String SECRET_KEY;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
