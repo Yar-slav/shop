@@ -2,138 +2,123 @@ package com.gridu.store.service.implementation;
 
 import com.gridu.store.dto.response.MessageResponseDto;
 import com.gridu.store.dto.response.OrderResponseDto;
-import com.gridu.store.model.CartEntity;
-import com.gridu.store.model.CartStatus;
-import com.gridu.store.model.ProductEntity;
+import com.gridu.store.model.OrderDetailEntity;
+import com.gridu.store.model.OrderEntity;
+import com.gridu.store.model.OrderStatus;
+import com.gridu.store.model.ShopItemEntity;
 import com.gridu.store.model.UserEntity;
-import com.gridu.store.repository.CartRepo;
+import com.gridu.store.repository.OrderDetailRepo;
+import com.gridu.store.repository.OrderRepo;
 import com.gridu.store.service.OrderService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.hibernate.SessionFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private final OrderRepo orderRepo;
+    private final OrderDetailRepo orderDetailRepo;
+    private final CartServiceImpl cartService;
+    private final ProductServiceImpl productService;
 
-    private final SessionFactory sessionFactory;
-    private final CartRepo cartRepo;
-
-    @SneakyThrows
     @Transactional
     @Override
     public void checkout(UserEntity userEntity) {
-        List<CartEntity> allCartByUser = cartRepo.findAllByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
-        if (allCartByUser.size() == 0) {
+        double totalPrice = 0D;
+        HashMap<Long, Long> itemsList = cartService.getItemsList();
+        if (itemsList.isEmpty()) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Your cart is empty");
         }
-        Long orderId = generateOrderId();
-        LocalDateTime orderedOn = LocalDateTime.now();
-        for (CartEntity cart : allCartByUser) {
-            ProductEntity product = cart.getProduct();
-            if (product.getAvailable() < cart.getQuantity()) {
-                throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Amount of products not enough");
-            }
-            product.setAvailable(product.getAvailable() - cart.getQuantity());
-
-            cart.setOrderedOn(orderedOn);
-            cart.setOrderId(orderId);
-            cart.setCartStatus(CartStatus.ORDER_PLACED);
+        for (Map.Entry<Long, Long> entry : itemsList.entrySet()) {
+            Long quantity = entry.getValue();
+            ShopItemEntity shopItem = productService.getShopItem(entry.getKey());
+            cartService.checkQuantity(shopItem.getAvailable(), quantity);
+            shopItem.setAvailable(shopItem.getAvailable() - quantity);
+            totalPrice += shopItem.getProduct().getPrice() * quantity;
         }
+        OrderEntity order = getOrderEntity(userEntity, totalPrice);
+        orderRepo.save(order);
+        addToOrderDetailEntity(itemsList, order);
+        itemsList.clear();
+
     }
 
     @Transactional
     @Override
     public MessageResponseDto cancelOrder(Long orderId, UserEntity userEntity) {
-        List<CartEntity> cartsByOrderId = getCartsByOrderIdWithStatusOrderPlaced(orderId);
-        LocalDateTime canceledOn = LocalDateTime.now();
-        for (CartEntity cart : cartsByOrderId) {
-            if (!cart.getUser().equals(userEntity)) {
-                throw new ResponseStatusException(HttpStatusCode.valueOf(404), "This number of order does not belong to you");
-            }
-            ProductEntity product = cart.getProduct();
-            product.setAvailable(product.getAvailable() + cart.getQuantity());
-
-            cart.setCanceledOn(canceledOn);
-            cart.setCartStatus(CartStatus.CANCEL);
+        OrderEntity order = orderRepo.findByIdAndUser(orderId, userEntity)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Order not found"));
+        if(order.getOrderStatus().equals(OrderStatus.CANCEL)){
+            throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Order already canceled");
         }
+        List<OrderDetailEntity> orderDetailEntities = orderDetailRepo.findAllByOrder(order);
+        for (OrderDetailEntity orderDetail : orderDetailEntities) {
+            ShopItemEntity shopItem = productService.getShopItem(orderDetail.getProductId());
+            shopItem.setAvailable(shopItem.getAvailable() + orderDetail.getQuantity());
+        }
+        orderDetailRepo.deleteAllByOrder(order);
+        order.setOrderStatus(OrderStatus.CANCEL);
+        order.setCanceledOn(LocalDateTime.now());
         return new MessageResponseDto("The order: " + orderId + " has been canceled successfully");
     }
 
     @Override
     public List<OrderResponseDto> getAllOrder(UserEntity userEntity) {
         List<OrderResponseDto> orderResponseDtoList = new ArrayList<>();
-        List<CartEntity> carts = cartRepo.findAllByUser(userEntity);
-        Map<Long, List<CartEntity>> map = carts.stream()
-                .filter(cart -> !cart.getCartStatus().equals(CartStatus.ADDED_TO_CART))
-                .collect(Collectors.groupingBy(CartEntity::getOrderId));
-
-        for (Map.Entry<Long, List<CartEntity>> cartEntities : map.entrySet()) {
-            orderResponseDtoList.add(getOrderResponseDto(cartEntities));
+        List<OrderEntity> orders = orderRepo.findAllByUser(userEntity);
+        for(OrderEntity order: orders) {
+            orderResponseDtoList.add(getOrderResponseDto(order));
         }
         orderResponseDtoList = orderResponseListSortedByDate(orderResponseDtoList);
         return orderResponseDtoList;
     }
 
-    private static OrderResponseDto getOrderResponseDto(Map.Entry<Long, List<CartEntity>> cartEntities) {
-        CartEntity cart = cartEntities.getValue().get(0);
-        return OrderResponseDto.builder()
-                .orderId(cartEntities.getKey())
-                .status(cart.getCartStatus())
-                .date(getDateTime(cart))
-                .totalPrice(getOrderTotalPrice(cartEntities.getValue()))
+    private void addToOrderDetailEntity(HashMap<Long, Long> itemsList, OrderEntity order) {
+        for (Map.Entry<Long, Long> entry : itemsList.entrySet()) {
+            orderDetailRepo.save(OrderDetailEntity.builder()
+                    .productId(entry.getKey())
+                    .quantity(entry.getValue())
+                    .order(order)
+                    .build()
+            );
+        }
+    }
+
+    private OrderEntity getOrderEntity(UserEntity userEntity, Double totalPrice) {
+        return OrderEntity.builder()
+                .user(userEntity)
+                .orderStatus(OrderStatus.ORDER_PLACED)
+                .orderedOn(LocalDateTime.now())
+                .totalPrice(totalPrice)
                 .build();
     }
 
-    private static LocalDateTime getDateTime(CartEntity cart) {
-        if (cart.getCartStatus().equals(CartStatus.CANCEL)) {
-            return cart.getCanceledOn();
+    private OrderResponseDto getOrderResponseDto(OrderEntity order) {
+        return OrderResponseDto.builder()
+                .orderId(order.getId())
+                .status(order.getOrderStatus())
+                .date(getDateTime(order))
+                .totalPrice(order.getTotalPrice())
+                .build();
+    }
+
+    private static LocalDateTime getDateTime(OrderEntity order) {
+        if (order.getOrderStatus().equals(OrderStatus.CANCEL)) {
+            return order.getCanceledOn();
         } else {
-            return cart.getOrderedOn();
+            return order.getOrderedOn();
         }
-    }
-
-    private static double getOrderTotalPrice(List<CartEntity> carts) {
-        double totalPrice = 0.0;
-        for (CartEntity cart : carts) {
-            totalPrice += cart.getProduct().getPrice() * cart.getQuantity();
-        }
-        return totalPrice;
-    }
-
-    private List<CartEntity> getCartsByOrderIdWithStatusOrderPlaced(Long orderId) {
-        List<CartEntity> cartsByOrderId = cartRepo.findAllByOrderIdAndCartStatus(orderId, CartStatus.ORDER_PLACED);
-        if (cartsByOrderId.equals(Collections.emptyList())) {
-            throw new ResponseStatusException(HttpStatusCode.valueOf(404), "Order not found");
-        }
-        return cartsByOrderId;
-    }
-
-    // Please, use separate order entity to couple order items with each other
-    // With this approach you would still can face situation when you have the same orderId for items from different orders
-    // Also it doesn't scale well and require additional unnecessary calls to database
-    // Let databases do this job for us
-    private Long generateOrderId() {
-        Long orderId;
-        do {
-            orderId = Math.abs(new Random().nextLong());
-        } while (!cartRepo.findAllByOrderId(orderId).equals(Collections.emptyList()));
-        return orderId;
     }
 
     private static List<OrderResponseDto> orderResponseListSortedByDate(List<OrderResponseDto> orderResponseDtoList) {

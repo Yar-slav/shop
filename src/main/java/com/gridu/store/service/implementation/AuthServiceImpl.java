@@ -3,10 +3,8 @@ package com.gridu.store.service.implementation;
 import com.gridu.store.dto.request.UserLoginRequest;
 import com.gridu.store.dto.request.UserRegistrationRequestDto;
 import com.gridu.store.dto.response.LoginResponseDto;
-import com.gridu.store.model.CartStatus;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
-import com.gridu.store.repository.CartRepo;
 import com.gridu.store.repository.UserRepo;
 import com.gridu.store.secure.config.JwtService;
 import com.gridu.store.service.AuthService;
@@ -18,6 +16,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -28,7 +27,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final CartRepo cartRepo;
 
     @Override
     public void register(UserRegistrationRequestDto requestDto) {
@@ -43,16 +41,14 @@ public class AuthServiceImpl implements AuthService {
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(409), "User with this email already exist");
         }
-
     }
 
+    @Transactional
     @Override
     public LoginResponseDto login(UserLoginRequest requestDto) {
         authenticate(requestDto);
         UserEntity userEntity = getUserByEmail(requestDto.getEmail());
         String token = jwtService.generateToken(userEntity);
-        // check after change to session
-        cartRepo.deleteByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
         return new LoginResponseDto(token);
     }
 

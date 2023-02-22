@@ -7,8 +7,6 @@ import com.gridu.store.service.OrderService;
 import com.gridu.store.service.implementation.AuthServiceImpl;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +22,6 @@ public class OrderController {
 
     private final OrderService orderService;
     private final AuthServiceImpl authServiceImpl;
-
 
     @PutMapping("/checkout")
     public void checkout(

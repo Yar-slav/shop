@@ -1,6 +1,6 @@
 package com.gridu.store.dto.response;
 
-import com.gridu.store.model.CartStatus;
+import com.gridu.store.model.OrderStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,5 +15,5 @@ public class OrderResponseDto {
     private Long orderId;
     private LocalDateTime date;
     private Double totalPrice;
-    private CartStatus status;
+    private OrderStatus status;
 }

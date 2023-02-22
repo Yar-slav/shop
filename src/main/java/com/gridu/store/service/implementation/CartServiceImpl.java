@@ -4,14 +4,14 @@ import com.gridu.store.dto.request.UserCartModifyDto;
 import com.gridu.store.dto.request.UserCartRequestDto;
 import com.gridu.store.dto.response.CartResponseDto;
 import com.gridu.store.dto.response.ProductInformationForCart;
-import com.gridu.store.model.CartEntity;
-import com.gridu.store.model.CartStatus;
 import com.gridu.store.model.ProductEntity;
-import com.gridu.store.model.UserEntity;
-import com.gridu.store.repository.CartRepo;
+import com.gridu.store.model.ShopItemEntity;
+import com.gridu.store.service.Cart;
 import com.gridu.store.service.CartService;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
@@ -22,43 +22,39 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
 
-    private final CartRepo cartRepo;
     private final ProductServiceImpl productService;
+    private final Cart cart;
 
     @Transactional
     @Override
-    public void addItemToCart(UserCartRequestDto requestDto, UserEntity userEntity) {
-        ProductEntity productEntity = productService.getProductEntity(requestDto.getId());
-        CartEntity existCart = cartRepo.findByUserAndProductIdAndCartStatus(
-                userEntity, requestDto.getId(), CartStatus.ADDED_TO_CART).orElse(null);
-        if (existCart != null) {
-            long needQuantity = existCart.getQuantity() + requestDto.getQuantity();
-            checkingWhetherTheProductsQuantityIsAvailable(needQuantity, productEntity.getAvailable());
-            existCart.setQuantity(needQuantity);
+    public void addItemToCart(UserCartRequestDto requestDto) {
+        ShopItemEntity shopItem = productService.getShopItem(requestDto.getId());
+        HashMap<Long, Long> itemsList = getItemsList();
+        if (itemsList.get(requestDto.getId()) == null) {
+            checkQuantity(shopItem.getAvailable(), requestDto.getQuantity());
+            itemsList.put(shopItem.getId(), requestDto.getQuantity());
         } else {
-            checkingWhetherTheProductsQuantityIsAvailable(requestDto.getQuantity(), productEntity.getAvailable());
-            CartEntity cartEntity = CartEntity.builder()
-                    .user(userEntity)
-                    .product(productEntity)
-                    .quantity(requestDto.getQuantity())
-                    .cartStatus(CartStatus.ADDED_TO_CART)
-                    .build();
-            cartRepo.save(cartEntity);
+            Long quantity = itemsList.get(shopItem.getId()) + requestDto.getQuantity();
+            checkQuantity(shopItem.getAvailable(), quantity);
+            itemsList.put(shopItem.getId(), quantity);
         }
     }
 
-    @Transactional
     @Override
-    public CartResponseDto getCart(UserEntity userEntity) {
+    public CartResponseDto getCart() {
         List<ProductInformationForCart> products = new ArrayList<>();
         Long productsNumber = 0L;
         double totalPrice = 0;
-        List<CartEntity> allCartByUser = cartRepo.findAllByUserAndCartStatus(userEntity, CartStatus.ADDED_TO_CART);
-        for (CartEntity cart : allCartByUser) {
+        HashMap<Long, Long> itemsList = getItemsList();
+        if (itemsList.isEmpty()) {
+            return new CartResponseDto(products, totalPrice);
+        }
+        for (Map.Entry<Long, Long> entry : itemsList.entrySet()) {
             productsNumber++;
-            ProductEntity product = cart.getProduct();
-            double subtotalPrice = product.getPrice() * cart.getQuantity();
-            products.add(getProductForCartResponse(productsNumber, cart, product, subtotalPrice));
+            Long quantity = entry.getValue();
+            ProductEntity product = productService.getProduct(entry.getKey());
+            double subtotalPrice = product.getPrice() * quantity;
+            products.add(getProductForCartResponse(productsNumber, quantity, product, subtotalPrice));
             totalPrice += subtotalPrice;
         }
         return CartResponseDto.builder()
@@ -68,42 +64,43 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public void deleteProductFromCart(Long id, UserEntity userEntity) {
-        CartEntity cartEntity = getCartByUserAndProductIdWithStatusAddedToCart(userEntity, id);
-        cartRepo.delete(cartEntity);
+    public void deleteProductFromCart(Long id) {
+        if (!cart.getItemsList().containsKey(id)) {
+            throw new ResponseStatusException(HttpStatusCode.valueOf(404), "Product not found");
+        }
+        cart.getItemsList().remove(id);
     }
 
     @Transactional
     @Override
-    public void modifyNumberOfItem(UserEntity userEntity, UserCartModifyDto requestDto) {
+    public void modifyNumberOfItem(UserCartModifyDto requestDto) {
         Long productId = requestDto.getProductId();
-        ProductEntity productEntity = productService.getProductEntity(productId);
-        CartEntity cartEntity = getCartByUserAndProductIdWithStatusAddedToCart(userEntity, productId);
-
-        checkingWhetherTheProductsQuantityIsAvailable(requestDto.getQuantity(), productEntity.getAvailable());
-
-        cartEntity.setQuantity(requestDto.getQuantity());
+        ShopItemEntity shopItem = productService.getShopItem(productId);
+        checkQuantity(shopItem.getAvailable(), requestDto.getQuantity());
+        cart.getItemsList().put(productId, requestDto.getQuantity());
     }
 
     private static ProductInformationForCart getProductForCartResponse(
-            Long productsNumber, CartEntity cart, ProductEntity product, double subtotalPrice) {
+            Long productsNumber, Long quantity, ProductEntity product, double subtotalPrice) {
         return ProductInformationForCart.builder()
                 .numberOfProduct(productsNumber)
                 .title(product.getTitle())
                 .price(product.getPrice())
-                .quantities(cart.getQuantity())
+                .quantities(quantity)
                 .subtotalPrice(subtotalPrice)
                 .build();
     }
 
-    private void checkingWhetherTheProductsQuantityIsAvailable(Long needQuantity, Long available) {
+    public HashMap<Long, Long> getItemsList() {
+        if (cart.getItemsList() == null) {
+            cart.setItemsList(new HashMap<>());
+        }
+        return cart.getItemsList();
+    }
+
+    void checkQuantity(Long available, Long needQuantity) {
         if (available < needQuantity) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Amount of products not enough");
         }
-    }
-
-    private CartEntity getCartByUserAndProductIdWithStatusAddedToCart(UserEntity userEntity, Long productId) {
-        return cartRepo.findByUserAndProductIdAndCartStatus(userEntity, productId, CartStatus.ADDED_TO_CART)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Product not found"));
     }
 }
