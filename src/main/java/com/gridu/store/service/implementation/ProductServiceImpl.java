@@ -47,6 +47,15 @@ public class ProductServiceImpl implements ProductService {
             return getProductResponseDto(shopItemEntity);
         }
     }
+    public ShopItemEntity getShopItem(Long id) {
+        return shopItemRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Item not found"));
+    }
+
+    public ProductEntity getProduct(Long id) {
+        return productRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Product not found"));
+    }
 
     private static ProductShopResponseDto getProductResponseDto(ShopItemEntity shopItemEntity) {
         return ProductShopResponseDto.builder()
@@ -69,15 +78,5 @@ public class ProductServiceImpl implements ProductService {
                 .title(requestDto.getTitle())
                 .price(requestDto.getPrice())
                 .build();
-    }
-
-    public ShopItemEntity getShopItem(Long id) {
-        return shopItemRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Item not found"));
-    }
-
-    public ProductEntity getProduct(Long id) {
-        return productRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Product not found"));
     }
 }

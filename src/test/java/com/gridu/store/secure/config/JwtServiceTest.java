@@ -5,16 +5,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class JwtServiceTest {
 
+    private static final String SECRET_KEY = "SecretKeySecretKeySecretKeySecretKeySecretKeySecretKey";
+
     @InjectMocks
     private JwtService jwtService;
+
+    @BeforeEach
+    public void setUp() {
+        jwtService = new JwtService();
+        ReflectionTestUtils.setField(jwtService, "SECRET_KEY", SECRET_KEY);
+    }
 
 
     @Test

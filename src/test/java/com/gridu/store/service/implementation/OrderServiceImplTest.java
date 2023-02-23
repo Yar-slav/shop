@@ -1,177 +1,151 @@
-//package com.gridu.store.service.implementation;
-//
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.lenient;
-//import static org.mockito.Mockito.when;
-//
-//import com.gridu.store.dto.response.MessageResponseDto;
-//import com.gridu.store.dto.response.OrderResponseDto;
-//import com.gridu.store.exception.ApiException;
-//import com.gridu.store.exception.Exceptions;
-//import com.gridu.store.model.CartEntity;
-//import com.gridu.store.model.CartStatus;
-//import com.gridu.store.model.ProductEntity;
-//import com.gridu.store.model.UserEntity;
-//import com.gridu.store.model.UserRole;
-//import com.gridu.store.repository.CartRepo;
-//import com.gridu.store.repository.ProductRepo;
-//import java.time.LocalDateTime;
-//import java.time.Month;
-//import java.util.List;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//
-//@ExtendWith(MockitoExtension.class)
-//class OrderServiceImplTest {
-//
-//    private final String authHeader = "Bearer token";
-//
-//    @Mock
-//    private AuthServiceImpl authServiceImpl;
-//    @Mock
-//    private CartRepo cartRepo;
-//    @Mock
-//    private ProductRepo productRepo;
-//    @InjectMocks
-//    private OrderServiceImpl orderService;
-//
-//    @Test
-//    void checkout() {
-//        Long orderId = 10L;
-//        MessageResponseDto responseDto = new MessageResponseDto("The order has been placed successfully");
-//        LocalDateTime orderedOn = LocalDateTime.now();
-//        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-//        ProductEntity productEntity1 = new ProductEntity(5L, "book1", 100L, 300, null);
-//        ProductEntity productEntity2 = new ProductEntity(6L, "book2", 100L, 500, null);
-//        List<CartEntity> allCartByUser = List.of(
-//                new CartEntity(1L, user, productEntity1, 10L, CartStatus.ADDED_TO_CART, null, null, null),
-//                new CartEntity(2L, user, productEntity2, 10L, CartStatus.ADDED_TO_CART, null, null, null)
-//        );
-//        List<CartEntity> allCartByUserAfterSave = List.of(
-//                new CartEntity(1L, user, productEntity1, 10L, CartStatus.ORDER_PLACED, orderId, orderedOn, null ),
-//                new CartEntity(2L, user, productEntity2, 10L, CartStatus.ORDER_PLACED, orderId, orderedOn, null)
-//        );
-//        when(authServiceImpl.getUserEntityByToken(authHeader)).thenReturn(user);
-//        when(cartRepo.findAllByUserAndCartStatus(user, CartStatus.ADDED_TO_CART)).thenReturn(allCartByUser);
-//        for (int i = 0; i < allCartByUser.size(); i++) {
-//            ProductEntity product = allCartByUser.get(i).getProduct();
-//            product.setAvailable(product.getAvailable() - allCartByUser.get(i).getQuantity());
-//            lenient().when(productRepo.save(product)).thenReturn(product);
-//            lenient().when(cartRepo.save(allCartByUser.get(i))).thenReturn(allCartByUserAfterSave.get(i));
-//        }
-//        MessageResponseDto result = orderService.checkout(authHeader);
-//        assertEquals(responseDto, result);
-//    }
-//
-//    @Test
-//    void checkout_ifProductNotEnough() {
-//        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-//        ProductEntity productEntity1 = new ProductEntity(5L, "book1", 100L, 300, null);
-//        ProductEntity productEntity2 = new ProductEntity(6L, "book2", 100L, 500, null);
-//        List<CartEntity> allCartByUser = List.of(
-//                new CartEntity(1L, user, productEntity1, 1000L, CartStatus.ADDED_TO_CART, null, null, null),
-//                new CartEntity(2L, user, productEntity2, 1000L, CartStatus.ADDED_TO_CART, null, null, null)
-//        );
-//
-//        when(authServiceImpl.getUserEntityByToken(authHeader)).thenReturn(user);
-//        when(cartRepo.findAllByUserAndCartStatus(user, CartStatus.ADDED_TO_CART)).thenReturn(allCartByUser);
-//        ApiException apiException = assertThrows(ApiException.class,
-//                () -> orderService.checkout(authHeader));
-//
-//        assertEquals(Exceptions.PRODUCTS_NOT_ENOUGH, apiException.getExceptions());
-//    }
-//
-//    @Test
-//    void cancelOrder() {
-//        Long orderId = 10L;
-//        MessageResponseDto messageResponseDto = new MessageResponseDto("The order: " + orderId + " has been canceled successfully");
-//        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-//        LocalDateTime orderedOn = LocalDateTime.of(2022, Month.JULY, 29, 19, 30, 40);
-//        LocalDateTime canceledOn = LocalDateTime.of(2022, Month.JULY, 29, 20, 30, 40);
-//
-//        ProductEntity productEntity1 = new ProductEntity(5L, "book1", 100L, 300, null);
-//        ProductEntity productEntity2 = new ProductEntity(6L, "book2", 100L, 500, null);
-//        List<CartEntity> cartsByOrderId = List.of(
-//                new CartEntity(1L, user, productEntity1, 10L, CartStatus.ORDER_PLACED, orderId, orderedOn, null),
-//                new CartEntity(2L, user, productEntity2, 10L, CartStatus.ORDER_PLACED, orderId, orderedOn, null)
-//        );
-//        ProductEntity productEntityReturned1 = new ProductEntity(5L, "book1", 110L, 300, null);
-//        ProductEntity productEntityReturned2 = new ProductEntity(6L, "book2", 110L, 500, null);
-//        List<CartEntity> cartsAfterCancel = List.of(
-//                new CartEntity(1L, user, productEntityReturned1, 10L, CartStatus.CANCEL, orderId, orderedOn, canceledOn),
-//                new CartEntity(2L, user, productEntityReturned2, 10L, CartStatus.CANCEL, orderId, orderedOn, canceledOn)
-//        );
-//
-//        when(authServiceImpl.getUserEntityByToken(authHeader)).thenReturn(user);
-//        when(cartRepo.findAllByOrderIdAndCartStatus(orderId, CartStatus.ORDER_PLACED)).thenReturn(cartsByOrderId);
-//        for (CartEntity cart : cartsAfterCancel) {
-//            ProductEntity product = cart.getProduct();
-//            lenient().when(productRepo.save(product)).thenReturn(product);
-//            lenient().when(cartRepo.save(cart)).thenReturn(cart);
-//        }
-//
-//        MessageResponseDto result = orderService.cancelOrder(orderId, authHeader);
-//        assertEquals(messageResponseDto, result);
-//    }
-//    @Test
-//    void cancelOrder_cartNotFound() {
-//        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-//
-//        when(authServiceImpl.getUserEntityByToken(authHeader)).thenReturn(user);
-//        ApiException apiException = assertThrows(ApiException.class,
-//                () -> orderService.cancelOrder(9L, authHeader));
-//
-//        assertEquals(Exceptions.ORDER_NOT_FOUND, apiException.getExceptions());
-//    }
-//
-//    @Test
-//    void cancelOrder_cartNotFound_cartNotBelongUser() {
-//        Long orderId = 10L;
-//        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-//        UserEntity user2 = new UserEntity(2L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-//        LocalDateTime orderedOn = LocalDateTime.of(2022, Month.JULY, 29, 19, 30, 40);
-//        ProductEntity productEntity1 = new ProductEntity(5L, "book1", 100L, 300, null);
-//        ProductEntity productEntity2 = new ProductEntity(6L, "book2", 100L, 500, null);
-//        List<CartEntity> cartsByOrderId = List.of(
-//                new CartEntity(1L, user, productEntity1, 10L, CartStatus.ORDER_PLACED, orderId, orderedOn, null),
-//                new CartEntity(2L, user, productEntity2, 10L, CartStatus.ORDER_PLACED, orderId, orderedOn, null)
-//        );
-//
-//        when(authServiceImpl.getUserEntityByToken(authHeader)).thenReturn(user2);
-//        lenient().when(cartRepo.findAllByOrderIdAndCartStatus(orderId, CartStatus.ORDER_PLACED)).thenReturn(cartsByOrderId);
-//        ApiException apiException = assertThrows(ApiException.class,
-//                () -> orderService.cancelOrder(10L, authHeader));
-//
-//        assertEquals(Exceptions.ORDER_NOT_BELONG_USER, apiException.getExceptions());
-//    }
-//
-//    @Test
-//    void getAllOrder() {
-//        LocalDateTime canceledOn1 = LocalDateTime.of(2022, Month.JULY, 29, 18, 30, 40);
-//        LocalDateTime orderedOn2 = LocalDateTime.of(2022, Month.JULY, 29, 19, 30, 40);
-//        List<OrderResponseDto> responseDtos = List.of(
-//                new OrderResponseDto(9L, orderedOn2, 5000D, CartStatus.ORDER_PLACED),
-//                new OrderResponseDto(10L, canceledOn1, 4000D, CartStatus.CANCEL)
-//        );
-//        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-//        ProductEntity productEntity1 = new ProductEntity(5L, "book1", 10L, 300, null);
-//        ProductEntity productEntity2 = new ProductEntity(6L, "book2", 10L, 400, null);
-//        ProductEntity productEntity3 = new ProductEntity(7L, "book3", 10L, 500, null);
-//        List<CartEntity> cartsByOrderId = List.of(
-//                new CartEntity(1L, user, productEntity1, 10L, CartStatus.ADDED_TO_CART, null, null, null),
-//                new CartEntity(2L, user, productEntity2, 10L, CartStatus.CANCEL, 10L, any(), canceledOn1),
-//                new CartEntity(3L, user, productEntity3, 10L, CartStatus.ORDER_PLACED, 9L, orderedOn2, null)
-//        );
-//
-//        when(authServiceImpl.getUserEntityByToken(authHeader)).thenReturn(user);
-//        when(cartRepo.findAllByUser(user)).thenReturn(cartsByOrderId);
-//
-//        List<OrderResponseDto> result = orderService.getAllOrder(authHeader);
-//        assertEquals(responseDtos, result);
-//    }
-//}
+package com.gridu.store.service.implementation;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+
+import com.gridu.store.dto.response.MessageResponseDto;
+import com.gridu.store.dto.response.OrderResponseDto;
+import com.gridu.store.model.OrderDetailEntity;
+import com.gridu.store.model.OrderEntity;
+import com.gridu.store.model.OrderStatus;
+import com.gridu.store.model.ProductEntity;
+import com.gridu.store.model.ShopItemEntity;
+import com.gridu.store.model.UserEntity;
+import com.gridu.store.model.UserRole;
+import com.gridu.store.repository.OrderDetailRepo;
+import com.gridu.store.repository.OrderRepo;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.web.server.ResponseStatusException;
+
+@ExtendWith(MockitoExtension.class)
+class OrderServiceImplTest {
+
+    @Mock
+    private  CartServiceImpl cartService;
+
+    @Mock
+    private ProductServiceImpl productService;
+    @Mock
+    private OrderRepo orderRepo;
+    @Mock
+    private OrderDetailRepo orderDetailRepo;
+    @InjectMocks
+    private OrderServiceImpl orderService;
+
+    @Test
+    void checkout_ifYourCartNotEmpty() {
+        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
+        HashMap<Long, Long> itemsList = new HashMap<>();
+        itemsList.put(1L, 100L);
+        itemsList.put(2L, 100L);
+        ProductEntity product1 = new ProductEntity(1L, "book1", 100, null);
+        ProductEntity product2 = new ProductEntity(2L, "book2", 100, null);
+        ShopItemEntity shopItem1 = new ShopItemEntity(1L, 10L ,product1);
+        ShopItemEntity shopItem2 = new ShopItemEntity(2L, 10L ,product2);
+        OrderEntity order = new OrderEntity(1L, user, OrderStatus.ORDER_PLACED, LocalDateTime.now(), null, 2000.0);
+
+        when(cartService.getItemsList()).thenReturn(itemsList);
+        when(productService.getShopItem(1L)).thenReturn(shopItem1);
+        when(productService.getShopItem(2L)).thenReturn(shopItem2);
+        when(orderRepo.save(any(OrderEntity.class))).thenReturn(order);
+        orderService.checkout(user);
+
+        assertTrue(itemsList.isEmpty());
+    }
+
+    @Test
+    void checkout_ifYourCartEmpty() {
+        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
+        HashMap<Long, Long> itemsList = new HashMap<>();
+
+        when(cartService.getItemsList()).thenReturn(itemsList);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> orderService.checkout(user));
+        assertEquals("Your cart is empty", exception.getReason());
+        assertEquals(HttpStatusCode.valueOf(202), exception.getStatusCode());
+    }
+
+    @Test
+    void cancelOrder() {
+        MessageResponseDto responseDto = new MessageResponseDto("The order: " + 1 + " has been canceled successfully");
+        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
+        OrderEntity order = new OrderEntity(1L, user, OrderStatus.ORDER_PLACED, LocalDateTime.now(), null, 2000.0);
+        List<OrderDetailEntity> orderDetailEntities = new ArrayList<>();
+        orderDetailEntities.add(new OrderDetailEntity(1L, 1L, 10L, order));
+        orderDetailEntities.add(new OrderDetailEntity(2L, 2L, 10L, order));
+        ShopItemEntity shopItem1 = new ShopItemEntity(1L, 10L, any());
+        ShopItemEntity shopItem2 = new ShopItemEntity(2L, 10L, any());
+
+        when(orderRepo.findByIdAndUser(1L, user)).thenReturn(Optional.of(order));
+        when(orderDetailRepo.findAllByOrder(order)).thenReturn(orderDetailEntities);
+        when(productService.getShopItem(1L)).thenReturn(shopItem1);
+        when(productService.getShopItem(2L)).thenReturn(shopItem2);
+        doNothing().when(orderDetailRepo).deleteAllByOrder(order);
+
+        MessageResponseDto result = orderService.cancelOrder(1L, user);
+
+        assertEquals(order.getOrderStatus(), OrderStatus.CANCEL);
+        assertEquals(responseDto, result);
+
+    }
+
+    @Test
+    void cancelOrder_orderNotFound() {
+        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
+
+        when(orderRepo.findByIdAndUser(9L, user)).thenReturn(Optional.empty());
+
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> orderService.cancelOrder(9L, user));
+        assertEquals("Order not found", exception.getReason());
+        assertEquals(HttpStatusCode.valueOf(404), exception.getStatusCode());
+    }
+
+    @Test
+    void cancelOrder_orderAlreadyCanceled() {
+        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
+        OrderEntity order = new OrderEntity(9L, user, OrderStatus.CANCEL, LocalDateTime.now(), null, 2000.0);
+
+        when(orderRepo.findByIdAndUser(9L, user)).thenReturn(Optional.of(order));
+
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> orderService.cancelOrder(9L, user));
+        assertEquals("Order already canceled", exception.getReason());
+        assertEquals(HttpStatusCode.valueOf(202), exception.getStatusCode());
+    }
+
+    @Test
+    void getAllOrder() {
+        UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
+        OrderEntity order1 = new OrderEntity(1L, user, OrderStatus.CANCEL, LocalDateTime.now(), LocalDateTime.now(), 2000.0);
+        OrderEntity order2 = new OrderEntity(2L, user, OrderStatus.ORDER_PLACED, LocalDateTime.now(), null, 5000.0);
+        List<OrderResponseDto> responseDtoList = new ArrayList<>();
+        responseDtoList.add(new OrderResponseDto(order2.getId(), order2.getOrderedOn(), order2.getTotalPrice(), order2.getOrderStatus()));
+        responseDtoList.add(new OrderResponseDto(order1.getId(), order1.getCanceledOn(), order1.getTotalPrice(), order1.getOrderStatus()));
+        List<OrderEntity> orders = new ArrayList<>();
+        orders.add(order1);
+        orders.add(order2);
+
+        when(orderRepo.findAllByUser(user)).thenReturn(orders);
+        List<OrderResponseDto> result = orderService.getAllOrder(user);
+        assertEquals(responseDtoList, result);
+
+    }
+}

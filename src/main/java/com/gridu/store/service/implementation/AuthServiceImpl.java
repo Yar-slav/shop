@@ -52,6 +52,12 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResponseDto(token);
     }
 
+    public UserEntity getUserEntityByToken(String authHeader) {
+        String token = authHeader.substring(7);
+        String userEmail = jwtService.extractUsername(token);
+        return getUserByEmail(userEmail);
+    }
+
     private void authenticate(UserLoginRequest requestDto) {
         try {
             authenticationManager.authenticate(
@@ -68,12 +74,6 @@ public class AuthServiceImpl implements AuthService {
         if(existsByEmail) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(409), "User with this email already exist");
         }
-    }
-
-    public UserEntity getUserEntityByToken(String authHeader) {
-        String token = authHeader.substring(7);
-        String userEmail = jwtService.extractUsername(token);
-        return getUserByEmail(userEmail);
     }
 
     private UserEntity getUserByEmail(String userEmail) {
