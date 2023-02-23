@@ -18,6 +18,9 @@ import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
 import com.gridu.store.repository.OrderDetailRepo;
 import com.gridu.store.repository.OrderRepo;
+import com.gridu.store.service.CartService;
+import com.gridu.store.service.ProductService;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,10 +38,10 @@ import org.springframework.web.server.ResponseStatusException;
 class OrderServiceImplTest {
 
     @Mock
-    private  CartServiceImpl cartService;
+    private CartService cartService;
 
     @Mock
-    private ProductServiceImpl productService;
+    private ProductService productService;
     @Mock
     private OrderRepo orderRepo;
     @Mock
@@ -52,11 +55,11 @@ class OrderServiceImplTest {
         HashMap<Long, Long> itemsList = new HashMap<>();
         itemsList.put(1L, 100L);
         itemsList.put(2L, 100L);
-        ProductEntity product1 = new ProductEntity(1L, "book1", 100, null);
-        ProductEntity product2 = new ProductEntity(2L, "book2", 100, null);
+        ProductEntity product1 = new ProductEntity(1L, "book1", BigDecimal.valueOf(100), null);
+        ProductEntity product2 = new ProductEntity(2L, "book2", BigDecimal.valueOf(100), null);
         ShopItemEntity shopItem1 = new ShopItemEntity(1L, 10L ,product1);
         ShopItemEntity shopItem2 = new ShopItemEntity(2L, 10L ,product2);
-        OrderEntity order = new OrderEntity(1L, user, OrderStatus.ORDER_PLACED, LocalDateTime.now(), null, 2000.0);
+        OrderEntity order = new OrderEntity(1L, user, OrderStatus.PLACED, LocalDateTime.now(), null, BigDecimal.valueOf(2000));
 
         when(cartService.getItemsList()).thenReturn(itemsList);
         when(productService.getShopItem(1L)).thenReturn(shopItem1);
@@ -84,7 +87,7 @@ class OrderServiceImplTest {
     void cancelOrder() {
         MessageResponseDto responseDto = new MessageResponseDto("The order: " + 1 + " has been canceled successfully");
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-        OrderEntity order = new OrderEntity(1L, user, OrderStatus.ORDER_PLACED, LocalDateTime.now(), null, 2000.0);
+        OrderEntity order = new OrderEntity(1L, user, OrderStatus.PLACED, LocalDateTime.now(), null, BigDecimal.valueOf(2000));
         List<OrderDetailEntity> orderDetailEntities = new ArrayList<>();
         orderDetailEntities.add(new OrderDetailEntity(1L, 1L, 10L, order));
         orderDetailEntities.add(new OrderDetailEntity(2L, 2L, 10L, order));
@@ -120,7 +123,7 @@ class OrderServiceImplTest {
     @Test
     void cancelOrder_orderAlreadyCanceled() {
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-        OrderEntity order = new OrderEntity(9L, user, OrderStatus.CANCEL, LocalDateTime.now(), null, 2000.0);
+        OrderEntity order = new OrderEntity(9L, user, OrderStatus.CANCEL, LocalDateTime.now(), null, BigDecimal.valueOf(2000));
 
         when(orderRepo.findByIdAndUser(9L, user)).thenReturn(Optional.of(order));
 
@@ -134,8 +137,8 @@ class OrderServiceImplTest {
     @Test
     void getAllOrder() {
         UserEntity user = new UserEntity(1L, "user@gmail.com", "passwordEncode", UserRole.USER, null);
-        OrderEntity order1 = new OrderEntity(1L, user, OrderStatus.CANCEL, LocalDateTime.now(), LocalDateTime.now(), 2000.0);
-        OrderEntity order2 = new OrderEntity(2L, user, OrderStatus.ORDER_PLACED, LocalDateTime.now(), null, 5000.0);
+        OrderEntity order1 = new OrderEntity(1L, user, OrderStatus.CANCEL, LocalDateTime.now(), LocalDateTime.now(), BigDecimal.valueOf(2000));
+        OrderEntity order2 = new OrderEntity(2L, user, OrderStatus.PLACED, LocalDateTime.now(), null, BigDecimal.valueOf(5000));
         List<OrderResponseDto> responseDtoList = new ArrayList<>();
         responseDtoList.add(new OrderResponseDto(order2.getId(), order2.getOrderedOn(), order2.getTotalPrice(), order2.getOrderStatus()));
         responseDtoList.add(new OrderResponseDto(order1.getId(), order1.getCanceledOn(), order1.getTotalPrice(), order1.getOrderStatus()));

@@ -9,7 +9,10 @@ import com.gridu.store.model.ShopItemEntity;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.repository.OrderDetailRepo;
 import com.gridu.store.repository.OrderRepo;
+import com.gridu.store.service.CartService;
 import com.gridu.store.service.OrderService;
+import com.gridu.store.service.ProductService;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,6 +23,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -29,13 +33,13 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepo orderRepo;
     private final OrderDetailRepo orderDetailRepo;
-    private final CartServiceImpl cartService;
-    private final ProductServiceImpl productService;
+    private final CartService cartService;
+    private final ProductService productService;
 
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     @Override
     public void checkout(UserEntity userEntity) {
-        double totalPrice = 0D;
+        BigDecimal totalPrice = BigDecimal.valueOf(0D);
         HashMap<Long, Long> itemsList = cartService.getItemsList();
         if (itemsList.isEmpty()) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Your cart is empty");
@@ -45,7 +49,7 @@ public class OrderServiceImpl implements OrderService {
             ShopItemEntity shopItem = productService.getShopItem(entry.getKey());
             cartService.checkQuantity(shopItem.getAvailable(), quantity);
             shopItem.setAvailable(shopItem.getAvailable() - quantity);
-            totalPrice += shopItem.getProduct().getPrice() * quantity;
+            totalPrice = totalPrice.add(shopItem.getProduct().getPrice().multiply(BigDecimal.valueOf(quantity)));
         }
         OrderEntity order = getOrderEntity(userEntity, totalPrice);
         orderRepo.save(order);
@@ -95,10 +99,10 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private OrderEntity getOrderEntity(UserEntity userEntity, Double totalPrice) {
+    private OrderEntity getOrderEntity(UserEntity userEntity, BigDecimal totalPrice) {
         return OrderEntity.builder()
                 .user(userEntity)
-                .orderStatus(OrderStatus.ORDER_PLACED)
+                .orderStatus(OrderStatus.PLACED)
                 .orderedOn(LocalDateTime.now())
                 .totalPrice(totalPrice)
                 .build();

@@ -2,6 +2,7 @@ package com.gridu.store.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,5 +21,5 @@ public class ProductRequestDto {
     private Long quantity;
 
     @Min(value = 0, message = "Price should be zero or greater")
-    private double price;
+    private BigDecimal price;
 }

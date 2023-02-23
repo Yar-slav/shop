@@ -2,6 +2,7 @@ package com.gridu.store.repository;
 
 import com.gridu.store.model.ShopItemEntity;
 import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +16,7 @@ public interface ShopItemRepo extends CrudRepository<ShopItemEntity, Long> {
     Page<ShopItemEntity> findAll(Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    ShopItemEntity findByProductTitleAndProductPrice(String title, double price);
+    ShopItemEntity findByProductTitleAndProductPrice(String title, BigDecimal price);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<ShopItemEntity> findById(Long id);

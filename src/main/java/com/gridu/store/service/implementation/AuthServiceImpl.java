@@ -52,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResponseDto(token);
     }
 
+    @Override
     public UserEntity getUserEntityByToken(String authHeader) {
         String token = authHeader.substring(7);
         String userEmail = jwtService.extractUsername(token);

@@ -1,5 +1,6 @@
 package com.gridu.store.dto.response;
 
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class ProductInformationForCart {
     private Long numberOfProduct;
     private String title;
-    private double price;
+    private BigDecimal price;
     private Long quantities;
-    private double subtotalPrice;
+    private BigDecimal subtotalPrice;
 }

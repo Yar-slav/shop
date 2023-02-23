@@ -12,6 +12,7 @@ import com.gridu.store.model.ProductEntity;
 import com.gridu.store.model.ShopItemEntity;
 import com.gridu.store.repository.ProductRepo;
 import com.gridu.store.repository.ShopItemRepo;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,9 +43,9 @@ class ProductServiceImplTest {
     @Test
     void getAllProducts() {
         List<ShopItemEntity> productsEntity = new ArrayList<>();
-        productsEntity.add(new ShopItemEntity(1L, 10L, new ProductEntity(1L, "book1", 100.0, null)));
-        productsEntity.add(new ShopItemEntity(2L, 10L, new ProductEntity(2L, "book2", 200.0, null)));
-        productsEntity.add(new ShopItemEntity(3L, 10L, new ProductEntity(3L, "book3", 300.0, null)));
+        productsEntity.add(new ShopItemEntity(1L, 10L, new ProductEntity(1L, "book1", BigDecimal.valueOf(100), null)));
+        productsEntity.add(new ShopItemEntity(2L, 10L, new ProductEntity(2L, "book2", BigDecimal.valueOf(200), null)));
+        productsEntity.add(new ShopItemEntity(3L, 10L, new ProductEntity(3L, "book3", BigDecimal.valueOf(300), null)));
         Pageable pageable = PageRequest.of(0, 3);
         Page<ShopItemEntity> pageEntity = new PageImpl<>(productsEntity);
 
@@ -56,9 +57,9 @@ class ProductServiceImplTest {
 
     @Test
     void addProduct_ifProductNotExist() {
-        ProductShopResponseDto responseDto = new ProductShopResponseDto(1L, "book", 10L, 300);
-        ProductRequestDto requestDto = new ProductRequestDto("book", 10L, 300);
-        ProductEntity product = new ProductEntity(1L, "book", 300, null);
+        ProductShopResponseDto responseDto = new ProductShopResponseDto(1L, "book", 10L, BigDecimal.valueOf(300));
+        ProductRequestDto requestDto = new ProductRequestDto("book", 10L, BigDecimal.valueOf(300));
+        ProductEntity product = new ProductEntity(1L, "book", BigDecimal.valueOf(300), null);
         ShopItemEntity shopItemEntity = new ShopItemEntity(1L, 10L, product);
 
         when(shopItemRepo.findByProductTitleAndProductPrice(requestDto.getTitle(), requestDto.getPrice())).thenReturn(null);
@@ -71,9 +72,9 @@ class ProductServiceImplTest {
 
     @Test
     void addProduct_ifProductExist() {
-        ProductShopResponseDto responseDto = new ProductShopResponseDto(2L, "book", 11L, 300);
-        ProductRequestDto requestDto = new ProductRequestDto("book", 1L, 300);
-        ProductEntity product = new ProductEntity(2L, "book", 300, null);
+        ProductShopResponseDto responseDto = new ProductShopResponseDto(2L, "book", 11L, BigDecimal.valueOf(300));
+        ProductRequestDto requestDto = new ProductRequestDto("book", 1L, BigDecimal.valueOf(300));
+        ProductEntity product = new ProductEntity(2L, "book", BigDecimal.valueOf(300), null);
         ShopItemEntity existingItem = new ShopItemEntity(2L, 10L, product);
 
         when(shopItemRepo.findByProductTitleAndProductPrice(requestDto.getTitle(), requestDto.getPrice()))
@@ -85,7 +86,7 @@ class ProductServiceImplTest {
 
     @Test
     void getProduct_IfProductExist() {
-        ProductEntity product = new ProductEntity(1L, "book", 300, null);
+        ProductEntity product = new ProductEntity(1L, "book", BigDecimal.valueOf(300), null);
         when(productRepo.findById(product.getId())).thenReturn(Optional.of(product));
 
         ProductEntity result = productService.getProduct(product.getId());
@@ -104,7 +105,7 @@ class ProductServiceImplTest {
 
     @Test
     void getShopItem_IfShopItemExist() {
-        ProductEntity product = new ProductEntity(1L, "book", 300, null);
+        ProductEntity product = new ProductEntity(1L, "book", BigDecimal.valueOf(300), null);
         ShopItemEntity shopItem = new ShopItemEntity(2L, 10L, product);
 
         when(shopItemRepo.findById(shopItem.getId())).thenReturn(Optional.of(shopItem));

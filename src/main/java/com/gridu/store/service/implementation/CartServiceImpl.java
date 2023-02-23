@@ -8,6 +8,8 @@ import com.gridu.store.model.ProductEntity;
 import com.gridu.store.model.ShopItemEntity;
 import com.gridu.store.service.Cart;
 import com.gridu.store.service.CartService;
+import com.gridu.store.service.ProductService;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
 
-    private final ProductServiceImpl productService;
+    private final ProductService productService;
     private final Cart cart;
 
     @Transactional
@@ -44,7 +46,7 @@ public class CartServiceImpl implements CartService {
     public CartResponseDto getCart() {
         List<ProductInformationForCart> products = new ArrayList<>();
         Long productsNumber = 0L;
-        double totalPrice = 0;
+        BigDecimal totalPrice = BigDecimal.valueOf(0);
         HashMap<Long, Long> itemsList = getItemsList();
         if (itemsList.isEmpty()) {
             return new CartResponseDto(products, totalPrice);
@@ -53,9 +55,9 @@ public class CartServiceImpl implements CartService {
             productsNumber++;
             Long quantity = entry.getValue();
             ProductEntity product = productService.getProduct(entry.getKey());
-            double subtotalPrice = product.getPrice() * quantity;
+            BigDecimal subtotalPrice = product.getPrice().multiply(BigDecimal.valueOf(quantity));
             products.add(getProductForCartResponse(productsNumber, quantity, product, subtotalPrice));
-            totalPrice += subtotalPrice;
+            totalPrice = totalPrice.add(subtotalPrice);
         }
         return CartResponseDto.builder()
                 .products(products)
@@ -80,17 +82,7 @@ public class CartServiceImpl implements CartService {
         cart.getItemsList().put(productId, requestDto.getQuantity());
     }
 
-    private static ProductInformationForCart getProductForCartResponse(
-            Long productsNumber, Long quantity, ProductEntity product, double subtotalPrice) {
-        return ProductInformationForCart.builder()
-                .numberOfProduct(productsNumber)
-                .title(product.getTitle())
-                .price(product.getPrice())
-                .quantities(quantity)
-                .subtotalPrice(subtotalPrice)
-                .build();
-    }
-
+    @Override
     public HashMap<Long, Long> getItemsList() {
         if (cart.getItemsList() == null) {
             cart.setItemsList(new HashMap<>());
@@ -98,9 +90,21 @@ public class CartServiceImpl implements CartService {
         return cart.getItemsList();
     }
 
-    void checkQuantity(Long available, Long needQuantity) {
+    @Override
+    public void checkQuantity(Long available, Long needQuantity) {
         if (available < needQuantity) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Amount of products not enough");
         }
+    }
+
+    private static ProductInformationForCart getProductForCartResponse(
+            Long productsNumber, Long quantity, ProductEntity product, BigDecimal subtotalPrice) {
+        return ProductInformationForCart.builder()
+                .numberOfProduct(productsNumber)
+                .title(product.getTitle())
+                .price(product.getPrice())
+                .quantities(quantity)
+                .subtotalPrice(subtotalPrice)
+                .build();
     }
 }

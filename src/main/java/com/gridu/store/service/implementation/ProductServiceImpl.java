@@ -47,11 +47,14 @@ public class ProductServiceImpl implements ProductService {
             return getProductResponseDto(shopItemEntity);
         }
     }
+
+    @Override
     public ShopItemEntity getShopItem(Long id) {
         return shopItemRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Item not found"));
     }
 
+    @Override
     public ProductEntity getProduct(Long id) {
         return productRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatusCode.valueOf(404), "Product not found"));

@@ -13,6 +13,8 @@ import com.gridu.store.dto.response.ProductInformationForCart;
 import com.gridu.store.model.ProductEntity;
 import com.gridu.store.model.ShopItemEntity;
 import com.gridu.store.service.Cart;
+import com.gridu.store.service.ProductService;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +33,7 @@ class CartServiceImplTest {
     @Mock
     private Cart cart;
     @Mock
-    private ProductServiceImpl productService;
+    private ProductService productService;
 
     @InjectMocks
     private CartServiceImpl cartService;
@@ -88,14 +90,14 @@ class CartServiceImplTest {
         HashMap<Long, Long> itemsList = new HashMap<>();
         itemsList.put(1L, 8L);
         itemsList.put(2L, 10L);
-        ProductEntity product1 = new ProductEntity(1L, "book1", 100, null);
-        ProductEntity product2 = new ProductEntity(2L, "book2", 100, null);
+        ProductEntity product1 = new ProductEntity(1L, "book1", BigDecimal.valueOf(100), null);
+        ProductEntity product2 = new ProductEntity(2L, "book2", BigDecimal.valueOf(100), null);
         List<ProductInformationForCart> productInformationForCarts = new ArrayList<>();
-        productInformationForCarts.add(new ProductInformationForCart(product1.getId(), product1.getTitle(), product1.getPrice(), 8L,  800));
-        productInformationForCarts.add(new ProductInformationForCart(product2.getId(), product2.getTitle(), product2.getPrice(), 10L, 1000));
+        productInformationForCarts.add(new ProductInformationForCart(product1.getId(), product1.getTitle(), product1.getPrice(), 8L,  BigDecimal.valueOf(800)));
+        productInformationForCarts.add(new ProductInformationForCart(product2.getId(), product2.getTitle(), product2.getPrice(), 10L, BigDecimal.valueOf(1000)));
         CartResponseDto cartResponseDto = CartResponseDto.builder()
                 .products(productInformationForCarts)
-                .totalPrice(1800)
+                .totalPrice(BigDecimal.valueOf(1800))
                 .build();
 
         when(cart.getItemsList()).thenReturn(itemsList);
@@ -111,7 +113,7 @@ class CartServiceImplTest {
         HashMap<Long, Long> itemsList = new HashMap<>();
         CartResponseDto cartResponseDto = CartResponseDto.builder()
                 .products(Collections.emptyList())
-                .totalPrice(0)
+                .totalPrice(BigDecimal.valueOf(0))
                 .build();
 
         when(cart.getItemsList()).thenReturn(itemsList);

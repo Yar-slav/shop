@@ -1,0 +1,2 @@
+ALTER TABLE orders MODIFY total_price DECIMAL(38,2);
+ALTER TABLE products MODIFY price DECIMAL(38,2);
