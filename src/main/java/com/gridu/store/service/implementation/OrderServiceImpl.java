@@ -9,6 +9,7 @@ import com.gridu.store.model.ShopItemEntity;
 import com.gridu.store.model.UserEntity;
 import com.gridu.store.repository.OrderDetailRepo;
 import com.gridu.store.repository.OrderRepo;
+import com.gridu.store.repository.ShopItemRepo;
 import com.gridu.store.service.CartService;
 import com.gridu.store.service.OrderService;
 import com.gridu.store.service.ProductService;
@@ -19,11 +20,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,8 +36,9 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDetailRepo orderDetailRepo;
     private final CartService cartService;
     private final ProductService productService;
+    private final ShopItemRepo shopItemRepo;
 
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional
     @Override
     public void checkout(UserEntity userEntity) {
         BigDecimal totalPrice = BigDecimal.valueOf(0D);
@@ -44,9 +46,10 @@ public class OrderServiceImpl implements OrderService {
         if (itemsList.isEmpty()) {
             throw new ResponseStatusException(HttpStatusCode.valueOf(202), "Your cart is empty");
         }
-        for (Map.Entry<Long, Long> entry : itemsList.entrySet()) {
-            Long quantity = entry.getValue();
-            ShopItemEntity shopItem = productService.getShopItem(entry.getKey());
+        Set<Long> productIds = itemsList.keySet();
+        List<ShopItemEntity> shopItemEntities = shopItemRepo.findAllByProductIdIn(productIds);
+        for (ShopItemEntity shopItem: shopItemEntities){
+            Long quantity = itemsList.get(shopItem.getId());
             cartService.checkQuantity(shopItem.getAvailable(), quantity);
             shopItem.setAvailable(shopItem.getAvailable() - quantity);
             totalPrice = totalPrice.add(shopItem.getProduct().getPrice().multiply(BigDecimal.valueOf(quantity)));
@@ -55,7 +58,6 @@ public class OrderServiceImpl implements OrderService {
         orderRepo.save(order);
         addToOrderDetailEntity(itemsList, order);
         itemsList.clear();
-
     }
 
     @Transactional

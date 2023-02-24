@@ -18,6 +18,7 @@ import com.gridu.store.model.UserEntity;
 import com.gridu.store.model.UserRole;
 import com.gridu.store.repository.OrderDetailRepo;
 import com.gridu.store.repository.OrderRepo;
+import com.gridu.store.repository.ShopItemRepo;
 import com.gridu.store.service.CartService;
 import com.gridu.store.service.ProductService;
 import java.math.BigDecimal;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -46,6 +48,9 @@ class OrderServiceImplTest {
     private OrderRepo orderRepo;
     @Mock
     private OrderDetailRepo orderDetailRepo;
+
+    @Mock
+    private ShopItemRepo shopItemRepo;
     @InjectMocks
     private OrderServiceImpl orderService;
 
@@ -57,13 +62,14 @@ class OrderServiceImplTest {
         itemsList.put(2L, 100L);
         ProductEntity product1 = new ProductEntity(1L, "book1", BigDecimal.valueOf(100), null);
         ProductEntity product2 = new ProductEntity(2L, "book2", BigDecimal.valueOf(100), null);
-        ShopItemEntity shopItem1 = new ShopItemEntity(1L, 10L ,product1);
-        ShopItemEntity shopItem2 = new ShopItemEntity(2L, 10L ,product2);
+        Set<Long> productIds = Set.of(1L, 2L);
+         List<ShopItemEntity> shopItemEntities = new ArrayList<>();
+        shopItemEntities.add(new ShopItemEntity(1L, 10L ,product1));
+        shopItemEntities.add(new ShopItemEntity(2L, 10L ,product2));
         OrderEntity order = new OrderEntity(1L, user, OrderStatus.PLACED, LocalDateTime.now(), null, BigDecimal.valueOf(2000));
 
         when(cartService.getItemsList()).thenReturn(itemsList);
-        when(productService.getShopItem(1L)).thenReturn(shopItem1);
-        when(productService.getShopItem(2L)).thenReturn(shopItem2);
+        when(shopItemRepo.findAllByProductIdIn(productIds)).thenReturn(shopItemEntities);
         when(orderRepo.save(any(OrderEntity.class))).thenReturn(order);
         orderService.checkout(user);
 
